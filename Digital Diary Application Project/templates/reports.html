@@ -1,0 +1,119 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diary Reports</title>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f5fb;
+            color: #292744;
+        }
+
+        header {
+            background: #5146a5;
+            color: white;
+            padding: 24px 7%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        header h2 { margin: 0; }
+
+        header a {
+            color: white;
+            text-decoration: none;
+            border: 1px solid white;
+            padding: 10px 14px;
+            border-radius: 8px;
+        }
+
+        main {
+            max-width: 900px;
+            margin: 35px auto;
+            padding: 0 18px;
+        }
+
+        .panel {
+            background: white;
+            padding: 25px;
+            margin-bottom: 22px;
+            border-radius: 14px;
+            box-shadow: 0 4px 18px #25254b10;
+        }
+
+        h3 { color: #5146a5; }
+
+        .total {
+            font-size: 32px;
+            color: #16856b;
+            font-weight: bold;
+        }
+
+        .item {
+            padding: 13px 0;
+            border-bottom: 1px solid #ecebf5;
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .item:last-child { border-bottom: none; }
+
+        .muted {
+            color: #73738a;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 500px) {
+            .item { flex-direction: column; }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h2>📊 Diary Reports</h2>
+    <a href="{{ url_for('dashboard') }}">← Dashboard</a>
+</header>
+
+<main>
+    <section class="panel">
+        <h3>Expense Overview</h3>
+        <p class="muted">
+            Total recorded expenses from your Expense Diary and Travel Diary.
+        </p>
+        <div class="total">₹{{ "%.2f"|format(expense_total) }}</div>
+    </section>
+
+    <section class="panel">
+        <h3>Entries by Category</h3>
+
+        {% if totals %}
+            {% for item in totals %}
+                <div class="item">
+                    <strong>{{ item['category'] or 'Personal Diary' }}</strong>
+                    <span>{{ item['total'] }} entries</span>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="muted">
+                No entries recorded yet. Add entries in your diary modules
+                to see your summary here.
+            </p>
+        {% endif %}
+    </section>
+</main>
+
+</body>
+</html>

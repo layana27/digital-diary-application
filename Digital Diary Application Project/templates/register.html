@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account | My Digital Diary</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #eee7ff, #faf7ff);
+            color: #302747;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 430px;
+            padding: 35px;
+            background: white;
+            border-radius: 22px;
+            box-shadow: 0 12px 40px #49347720;
+        }
+
+        .logo {
+            text-align: center;
+            font-size: 46px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #6745a5;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #817895;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-top: 17px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 13px;
+            margin-top: 8px;
+            border: 1px solid #d9d0ec;
+            border-radius: 10px;
+            font-size: 15px;
+        }
+
+        input:focus {
+            outline: 2px solid #a58bdf;
+            border-color: #7353ba;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            margin-top: 25px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #7353ba, #a58bdf);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .message {
+            padding: 11px;
+            margin-top: 12px;
+            border-radius: 8px;
+            background: #fff0f2;
+            color: #a7354b;
+            font-size: 14px;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 22px;
+            font-size: 14px;
+        }
+
+        a {
+            color: #7353ba;
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="card">
+        <div class="logo">📔</div>
+
+        <h1>Create Account</h1>
+
+        <p class="subtitle">
+            Create your personal diary account
+            and keep your favourite memories safe. 💜
+        </p>
+
+        {% with messages = get_flashed_messages() %}
+            {% for message in messages %}
+                <div class="message">{{ message }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        <form action="{{ url_for('register') }}" method="POST">
+
+            <label for="name">Full Name</label>
+            <input
+                type="text"
+                id="name"
+                name="name"
+                placeholder="Enter your full name"
+                autocomplete="name"
+                required
+            >
+
+            <label for="email">Email Address</label>
+            <input
+                type="email"
+                id="email"
+                name="email"
+                placeholder="Enter your email address"
+                autocomplete="email"
+                required
+            >
+
+            <label for="password">Password</label>
+            <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="At least 8 characters"
+                minlength="8"
+                autocomplete="new-password"
+                required
+            >
+
+            <button type="submit">Create My Account ✨</button>
+        </form>
+
+        <p class="login-link">
+            Already have an account?
+            <a href="{{ url_for('login') }}">Login here</a>
+        </p>
+    </main>
+</body>
+</html>
