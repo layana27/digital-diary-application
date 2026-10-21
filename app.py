@@ -1,17 +1,25 @@
+
 from flask import (
     Flask, render_template, request,
     redirect, url_for, session, flash
 )
 import sqlite3
+import os
 from functools import wraps
 from datetime import date
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-import os
 
-app.secret_key = os.environ.get("SECRET_KEY", "digital-diary-local-key")
-DATABASE = "diary.db"
+app.secret_key = os.environ.get(
+    "SECRET_KEY", "digital-diary-local-key"
+)
+
+# Use DATABASE_PATH if configured on Render.
+DATABASE = os.environ.get(
+    "DATABASE_PATH",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "diary.db")
+)
 
 
 def get_db():
@@ -23,52 +31,55 @@ def get_db():
 def init_db():
     conn = get_db()
 
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT,
-            email TEXT NOT NULL UNIQUE,
-            password_hash TEXT NOT NULL
-        )
-    """)
-
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS entries (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            content TEXT NOT NULL,
-            entry_date TEXT NOT NULL
-        )
-    """)
-
-    # Add columns safely to the existing database
-    user_columns = {
-        row["name"]
-        for row in conn.execute("PRAGMA table_info(users)")
-    }
-    if "name" not in user_columns:
-        conn.execute("ALTER TABLE users ADD COLUMN name TEXT")
-
-    entry_columns = {
-        row["name"]
-        for row in conn.execute("PRAGMA table_info(entries)")
-    }
-
-    for column, definition in [
-        ("user_id", "INTEGER"),
-        ("category", "TEXT DEFAULT 'Personal Diary'"),
-        ("destination", "TEXT"),
-        ("expenses", "REAL"),
-        ("status", "TEXT DEFAULT 'Pending'"),
-        ("photo", "TEXT"),
-    ]:
-        if column not in entry_columns:
-            conn.execute(
-                f"ALTER TABLE entries ADD COLUMN {column} {definition}"
+    try:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT,
+                email TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL
             )
+        """)
 
-    conn.commit()
-    conn.close()
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS entries (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                entry_date TEXT NOT NULL
+            )
+        """)
+
+        user_columns = {
+            row["name"]
+            for row in conn.execute("PRAGMA table_info(users)")
+        }
+
+        if "name" not in user_columns:
+            conn.execute("ALTER TABLE users ADD COLUMN name TEXT")
+
+        entry_columns = {
+            row["name"]
+            for row in conn.execute("PRAGMA table_info(entries)")
+        }
+
+        for column, definition in [
+            ("user_id", "INTEGER"),
+            ("category", "TEXT DEFAULT 'Personal Diary'"),
+            ("destination", "TEXT"),
+            ("expenses", "REAL"),
+            ("status", "TEXT DEFAULT 'Pending'"),
+            ("photo", "TEXT"),
+        ]:
+            if column not in entry_columns:
+                conn.execute(
+                    f"ALTER TABLE entries ADD COLUMN {column} {definition}"
+                )
+
+        conn.commit()
+
+    finally:
+        conn.close()
 
 
 def login_required(view):
@@ -126,19 +137,20 @@ def register():
                 )
 
             conn.commit()
-            conn.close()
-
-            session.clear()
-            session["user_id"] = user_id
-            session["name"] = name
-            session["email"] = email
-
-            return redirect(url_for("dashboard"))
 
         except sqlite3.IntegrityError:
-            conn.close()
             flash("This email is already registered. Please log in.")
             return render_template("register.html")
+
+        finally:
+            conn.close()
+
+        session.clear()
+        session["user_id"] = user_id
+        session["name"] = name
+        session["email"] = email
+
+        return redirect(url_for("dashboard"))
 
     return render_template("register.html")
 
@@ -150,10 +162,12 @@ def login():
         password = request.form.get("password", "")
 
         conn = get_db()
-        user = conn.execute(
-            "SELECT * FROM users WHERE email = ?", (email,)
-        ).fetchone()
-        conn.close()
+        try:
+            user = conn.execute(
+                "SELECT * FROM users WHERE email = ?", (email,)
+            ).fetchone()
+        finally:
+            conn.close()
 
         if user and check_password_hash(user["password_hash"], password):
             session.clear()
@@ -176,7 +190,6 @@ def logout():
 @app.route("/")
 @login_required
 def home():
-    # Keep the existing home route for older links.
     return redirect(url_for("dashboard"))
 
 
@@ -184,15 +197,14 @@ def home():
 @login_required
 def dashboard():
     conn = get_db()
-    user_id = session["user_id"]
-
-    total_entries = conn.execute("""
-        SELECT COUNT(*) AS total
-        FROM entries
-        WHERE user_id = ?
-    """, (user_id,)).fetchone()["total"]
-
-    conn.close()
+    try:
+        total_entries = conn.execute("""
+            SELECT COUNT(*) AS total
+            FROM entries
+            WHERE user_id = ?
+        """, (session["user_id"],)).fetchone()["total"]
+    finally:
+        conn.close()
 
     return render_template(
         "dashboard.html",
@@ -211,27 +223,30 @@ def module(category):
     category_name = CATEGORIES[category]
 
     conn = get_db()
-
-    if search:
-        wildcard = f"%{search}%"
-        entries = conn.execute("""
-            SELECT * FROM entries
-            WHERE user_id = ?
-              AND category = ?
-              AND (title LIKE ? OR content LIKE ? OR destination LIKE ?)
-            ORDER BY entry_date DESC, id DESC
-        """, (
-            session["user_id"], category_name,
-            wildcard, wildcard, wildcard
-        )).fetchall()
-    else:
-        entries = conn.execute("""
-            SELECT * FROM entries
-            WHERE user_id = ? AND category = ?
-            ORDER BY entry_date DESC, id DESC
-        """, (session["user_id"], category_name)).fetchall()
-
-    conn.close()
+    try:
+        if search:
+            wildcard = f"%{search}%"
+            entries = conn.execute("""
+                SELECT * FROM entries
+                WHERE user_id = ?
+                  AND category = ?
+                  AND (
+                      title LIKE ? OR content LIKE ?
+                      OR destination LIKE ?
+                  )
+                ORDER BY entry_date DESC, id DESC
+            """, (
+                session["user_id"], category_name,
+                wildcard, wildcard, wildcard
+            )).fetchall()
+        else:
+            entries = conn.execute("""
+                SELECT * FROM entries
+                WHERE user_id = ? AND category = ?
+                ORDER BY entry_date DESC, id DESC
+            """, (session["user_id"], category_name)).fetchall()
+    finally:
+        conn.close()
 
     return render_template(
         "module.html",
@@ -262,7 +277,9 @@ def add(category):
 
     expenses = None
 
-    if category == "expense" or (category == "travel" and expenses_text):
+    if category == "expense" or (
+        category == "travel" and expenses_text
+    ):
         try:
             expenses = float(expenses_text)
             if expenses < 0:
@@ -276,23 +293,20 @@ def add(category):
         return redirect(url_for("module", category=category))
 
     conn = get_db()
-    conn.execute("""
-        INSERT INTO entries
-        (title, content, entry_date, user_id, category,
-         destination, expenses, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        title,
-        content,
-        entry_date,
-        session["user_id"],
-        CATEGORIES[category],
-        destination or None,
-        expenses,
-        status
-    ))
-    conn.commit()
-    conn.close()
+    try:
+        conn.execute("""
+            INSERT INTO entries
+            (title, content, entry_date, user_id, category,
+             destination, expenses, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            title, content, entry_date, session["user_id"],
+            CATEGORIES[category], destination or None,
+            expenses, status
+        ))
+        conn.commit()
+    finally:
+        conn.close()
 
     flash("Entry saved successfully!")
     return redirect(url_for("module", category=category))
@@ -304,63 +318,62 @@ def edit(entry_id):
     conn = get_db()
     user_id = session["user_id"]
 
-    entry = conn.execute("""
-        SELECT * FROM entries
-        WHERE id = ? AND user_id = ?
-    """, (entry_id, user_id)).fetchone()
+    try:
+        entry = conn.execute("""
+            SELECT * FROM entries
+            WHERE id = ? AND user_id = ?
+        """, (entry_id, user_id)).fetchone()
 
-    if entry is None:
-        conn.close()
-        return "Entry not found", 404
+        if entry is None:
+            return "Entry not found", 404
 
-    if request.method == "POST":
-        title = request.form.get("title", "").strip()
-        content = request.form.get("content", "").strip()
-        entry_date = request.form.get("entry_date", "").strip()
-        destination = request.form.get("destination", "").strip()
-        expenses_text = request.form.get("expenses", "").strip()
-        status = request.form.get("status", "Pending").strip()
+        if request.method == "POST":
+            title = request.form.get("title", "").strip()
+            content = request.form.get("content", "").strip()
+            entry_date = request.form.get("entry_date", "").strip()
+            destination = request.form.get("destination", "").strip()
+            expenses_text = request.form.get("expenses", "").strip()
+            status = request.form.get("status", "Pending").strip()
 
-        if not title or not content or not entry_date:
-            conn.close()
-            flash("Please complete the required fields.")
-            return redirect(url_for("edit", entry_id=entry_id))
-
-        expenses = None
-        if expenses_text:
-            try:
-                expenses = float(expenses_text)
-                if expenses < 0:
-                    raise ValueError
-            except ValueError:
-                conn.close()
-                flash("Enter a valid non-negative expense.")
+            if not title or not content or not entry_date:
+                flash("Please complete the required fields.")
                 return redirect(url_for("edit", entry_id=entry_id))
 
-        conn.execute("""
-            UPDATE entries
-            SET title = ?, content = ?, entry_date = ?,
-                destination = ?, expenses = ?, status = ?
-            WHERE id = ? AND user_id = ?
-        """, (
-            title, content, entry_date,
-            destination or None, expenses, status,
-            entry_id, user_id
-        ))
+            expenses = None
+            if expenses_text:
+                try:
+                    expenses = float(expenses_text)
+                    if expenses < 0:
+                        raise ValueError
+                except ValueError:
+                    flash("Enter a valid non-negative expense.")
+                    return redirect(url_for("edit", entry_id=entry_id))
 
-        conn.commit()
+            conn.execute("""
+                UPDATE entries
+                SET title = ?, content = ?, entry_date = ?,
+                    destination = ?, expenses = ?, status = ?
+                WHERE id = ? AND user_id = ?
+            """, (
+                title, content, entry_date, destination or None,
+                expenses, status, entry_id, user_id
+            ))
+            conn.commit()
+
+            category_key = next(
+                (
+                    key for key, value in CATEGORIES.items()
+                    if value == entry["category"]
+                ),
+                "personal"
+            )
+
+            flash("Entry updated successfully!")
+            return redirect(url_for("module", category=category_key))
+
+    finally:
         conn.close()
 
-        flash("Entry updated successfully!")
-        return redirect(url_for(
-            "module",
-            category=next(
-                key for key, value in CATEGORIES.items()
-                if value == entry["category"]
-            )
-        ))
-
-    conn.close()
     return render_template("edit.html", entry=entry)
 
 
@@ -368,25 +381,27 @@ def edit(entry_id):
 @login_required
 def delete(entry_id):
     conn = get_db()
+    try:
+        entry = conn.execute("""
+            SELECT category FROM entries
+            WHERE id = ? AND user_id = ?
+        """, (entry_id, session["user_id"])).fetchone()
 
-    entry = conn.execute("""
-        SELECT category FROM entries
-        WHERE id = ? AND user_id = ?
-    """, (entry_id, session["user_id"])).fetchone()
-
-    if entry:
-        conn.execute(
-            "DELETE FROM entries WHERE id = ? AND user_id = ?",
-            (entry_id, session["user_id"])
-        )
-        conn.commit()
-
-    conn.close()
+        if entry:
+            conn.execute(
+                "DELETE FROM entries WHERE id = ? AND user_id = ?",
+                (entry_id, session["user_id"])
+            )
+            conn.commit()
+    finally:
+        conn.close()
 
     if entry:
         category = next(
-            (key for key, value in CATEGORIES.items()
-             if value == entry["category"]),
+            (
+                key for key, value in CATEGORIES.items()
+                if value == entry["category"]
+            ),
             "personal"
         )
         return redirect(url_for("module", category=category))
@@ -400,21 +415,22 @@ def reports():
     conn = get_db()
     user_id = session["user_id"]
 
-    totals = conn.execute("""
-        SELECT category, COUNT(*) AS total
-        FROM entries
-        WHERE user_id = ?
-        GROUP BY category
-    """, (user_id,)).fetchall()
+    try:
+        totals = conn.execute("""
+            SELECT category, COUNT(*) AS total
+            FROM entries
+            WHERE user_id = ?
+            GROUP BY category
+        """, (user_id,)).fetchall()
 
-    expense_total = conn.execute("""
-        SELECT COALESCE(SUM(expenses), 0) AS total
-        FROM entries
-        WHERE user_id = ?
-          AND category IN ('Expense Diary', 'Travel Diary')
-    """, (user_id,)).fetchone()["total"]
-
-    conn.close()
+        expense_total = conn.execute("""
+            SELECT COALESCE(SUM(expenses), 0) AS total
+            FROM entries
+            WHERE user_id = ?
+              AND category IN ('Expense Diary', 'Travel Diary')
+        """, (user_id,)).fetchone()["total"]
+    finally:
+        conn.close()
 
     return render_template(
         "reports.html",
@@ -423,6 +439,10 @@ def reports():
     )
 
 
+# IMPORTANT: Initialize database when Gunicorn imports this file.
+# This must stay outside the __main__ block.
+init_db()
+
+
 if __name__ == "__main__":
-    init_db()
     app.run(debug=True)
