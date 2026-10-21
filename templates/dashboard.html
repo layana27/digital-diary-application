@@ -1,0 +1,238 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Diary Dashboard</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f5fb;
+            color: #272541;
+        }
+
+        header {
+            background: #5146a5;
+            color: white;
+            padding: 24px 7%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        header h1 {
+            margin: 0 0 7px;
+            font-size: 27px;
+        }
+
+        header p {
+            margin: 0;
+            opacity: 0.9;
+        }
+
+        .logout {
+            background: #fff;
+            color: #5146a5;
+            border: 0;
+            border-radius: 8px;
+            padding: 11px 17px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        main {
+            max-width: 1150px;
+            margin: 35px auto;
+            padding: 0 20px;
+        }
+
+        .intro {
+            margin-bottom: 25px;
+        }
+
+        .intro h2 {
+            margin-bottom: 8px;
+        }
+
+        .intro p {
+            color: #73738a;
+        }
+
+        .stats {
+            background: white;
+            padding: 22px;
+            border-radius: 14px;
+            margin-bottom: 28px;
+            box-shadow: 0 4px 18px #25254b10;
+        }
+
+        .stats strong {
+            display: block;
+            font-size: 30px;
+            color: #5146a5;
+            margin-top: 8px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 24px;
+            border-radius: 15px;
+            box-shadow: 0 4px 18px #25254b10;
+            border: 1px solid #ecebf5;
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+        }
+
+        .emoji {
+            font-size: 34px;
+        }
+
+        .card h3 {
+            margin: 15px 0 9px;
+        }
+
+        .card p {
+            color: #73738a;
+            line-height: 1.6;
+            min-height: 48px;
+        }
+
+        .open {
+            display: inline-block;
+            background: #5146a5;
+            color: white;
+            padding: 11px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            margin-top: 8px;
+        }
+
+        .report {
+            margin-top: 28px;
+            text-align: center;
+        }
+
+        .report a {
+            color: #5146a5;
+            font-weight: bold;
+        }
+
+        footer {
+            text-align: center;
+            color: #85859a;
+            padding: 25px;
+        }
+
+        @media (max-width: 800px) {
+            .grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 520px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div>
+        <h1>📔 Digital Diary</h1>
+        <p>Your personal space to organize everyday life</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('logout') }}">
+        <button class="logout" type="submit">Logout</button>
+    </form>
+</header>
+
+<main>
+    <section class="intro">
+        <h2>Hello, {{ name }}! 👋</h2>
+        <p>Keep your memories, plans, and daily records in one place.</p>
+    </section>
+
+    <section class="stats">
+        Total saved entries
+        <strong>{{ total_entries }}</strong>
+    </section>
+
+    <section class="grid">
+
+        <article class="card">
+            <div class="emoji">📔</div>
+            <h3>Personal Diary</h3>
+            <p>Record your thoughts, feelings, and memorable moments.</p>
+            <a class="open" href="{{ url_for('module', category='personal') }}">Open Diary →</a>
+        </article>
+
+        <article class="card">
+            <div class="emoji">✈️</div>
+            <h3>Travel Diary</h3>
+            <p>Save destinations, travel memories, dates, and expenses.</p>
+            <a class="open" href="{{ url_for('module', category='travel') }}">Explore Travel →</a>
+        </article>
+
+        <article class="card">
+            <div class="emoji">💰</div>
+            <h3>Expense Diary</h3>
+            <p>Record spending and review your saved expense details.</p>
+            <a class="open" href="{{ url_for('module', category='expense') }}">Track Expenses →</a>
+        </article>
+
+        <article class="card">
+            <div class="emoji">📚</div>
+            <h3>Study Planner</h3>
+            <p>Organize study tasks and track their completion status.</p>
+            <a class="open" href="{{ url_for('module', category='study') }}">Plan Studies →</a>
+        </article>
+
+        <article class="card">
+            <div class="emoji">🌿</div>
+            <h3>Health Diary</h3>
+            <p>Maintain daily wellness notes and healthy habit records.</p>
+            <a class="open" href="{{ url_for('module', category='health') }}">Track Health →</a>
+        </article>
+
+        <article class="card">
+            <div class="emoji">📅</div>
+            <h3>Daily Activity Diary</h3>
+            <p>Record daily activities, plans, and completed tasks.</p>
+            <a class="open" href="{{ url_for('module', category='activity') }}">View Activities →</a>
+        </article>
+
+    </section>
+
+    <div class="report">
+        <a href="{{ url_for('reports') }}">📊 View Diary Summary & Expense Report</a>
+    </div>
+</main>
+
+<footer>
+    Digital Diary Application · Organize your day, preserve your memories.
+</footer>
+
+</body>
+</html>

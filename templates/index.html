@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Diary Application</title>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: #f8f6fc;
+            color: #302747;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 6%;
+            background: white;
+            border-bottom: 1px solid #eee8f7;
+        }
+
+        .brand {
+            font-size: 21px;
+            font-weight: 800;
+            color: #49317f;
+        }
+
+        button, input, textarea {
+            font: inherit;
+        }
+
+        button, a { cursor: pointer; }
+
+        .logout-button {
+            padding: 10px 17px;
+            background: white;
+            color: #49317f;
+            border: 1px solid #e7ddf6;
+            border-radius: 10px;
+        }
+
+        .page {
+            max-width: 1100px;
+            margin: 32px auto;
+            padding: 0 20px;
+        }
+
+        .welcome-banner {
+            padding: 35px;
+            border-radius: 22px;
+            color: white;
+            background: linear-gradient(120deg, #6544ad, #9676dc);
+        }
+
+        .welcome-banner h1 { margin-top: 0; }
+
+        .welcome-banner p { line-height: 1.7; }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 18px;
+            margin: 22px 0 30px;
+        }
+
+        .stat-card, .panel, .entry-card {
+            background: white;
+            border: 1px solid #eee8f7;
+            border-radius: 17px;
+            padding: 23px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card strong {
+            display: block;
+            color: #49317f;
+            font-size: 24px;
+            margin-top: 8px;
+        }
+
+        h2, h3 { color: #49317f; }
+
+        label {
+            display: block;
+            margin: 17px 0 8px;
+            font-weight: 600;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #e1d8ef;
+            border-radius: 10px;
+            background: #fdfcff;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .primary-button {
+            margin-top: 18px;
+            padding: 13px 20px;
+            background: #7550c8;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+        }
+
+        .primary-button:hover { background: #49317f; }
+
+        .search-form {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .search-form input { flex: 1; }
+
+        .entry-list {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .entry-card {
+            border-top: 4px solid #a58bdf;
+            overflow-wrap: anywhere;
+        }
+
+        .entry-date {
+            color: #88819b;
+            font-size: 13px;
+        }
+
+        .entry-content {
+            white-space: pre-wrap;
+            line-height: 1.7;
+        }
+
+        .small-button {
+            display: inline-block;
+            padding: 9px 13px;
+            background: #eee7ff;
+            color: #49317f;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .delete-button {
+            background: #fff0f1;
+            color: #b83f55;
+        }
+
+        .entry-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+            flex-wrap: wrap;
+        }
+
+        .empty-state {
+            padding: 30px;
+            text-align: center;
+            background: white;
+            border: 1px dashed #d8cbed;
+            border-radius: 17px;
+        }
+
+        footer {
+            padding: 25px;
+            text-align: center;
+            color: #88819b;
+            font-size: 13px;
+        }
+
+        @media (max-width: 650px) {
+            .stats, .entry-list { grid-template-columns: 1fr; }
+            .search-form { flex-wrap: wrap; }
+            .search-form input { flex-basis: 100%; }
+            .welcome-banner { padding: 24px; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="brand">✈️ Digital Diary Application</div>
+
+        <form action="{{ url_for('logout') }}" method="POST">
+            <button class="logout-button" type="submit">Logout ↗</button>
+        </form>
+    </nav>
+
+    <main class="page">
+
+        <section class="welcome-banner">
+            <p>YOUR PERSONAL TRAVEL JOURNAL ✨</p>
+            <h1>Welcome back, {{ name }}! 🌍</h1>
+            <p>
+                Every journey has a story worth remembering.
+                Record your favourite destinations, travel experiences,
+                dates and expenses in your personal travel diary.
+            </p>
+        </section>
+
+        <section class="stats">
+            <div class="stat-card">
+                <span>🧳 Total Travel Memories</span>
+                <strong>{{ total_entries }}</strong>
+            </div>
+
+            <div class="stat-card">
+                <span>📅 Today's Date</span>
+                <strong id="today-date">Today</strong>
+            </div>
+        </section>
+
+        <section class="panel" id="write-entry">
+            <h2>🌍 Record a Trip</h2>
+            <p>Save the details of your latest adventure.</p>
+
+            <form action="{{ url_for('add') }}" method="POST">
+
+                <label for="title">Trip Title</label>
+                <input
+                    type="text"
+                    id="title"
+                    name="title"
+                    placeholder="e.g. My Weekend in Goa"
+                    required
+                >
+
+                <label for="destination">Destination / Place Name</label>
+                <input
+                    type="text"
+                    id="destination"
+                    name="destination"
+                    placeholder="e.g. Goa, Kerala, Mysore"
+                    required
+                >
+
+                <label for="entry_date">Travel Date</label>
+                <input
+                    type="date"
+                    id="entry_date"
+                    name="entry_date"
+                    value="{{ today }}"
+                    required
+                >
+
+                <label for="expenses">Travel Expenses (₹)</label>
+                <input
+                    type="number"
+                    id="expenses"
+                    name="expenses"
+                    min="0"
+                    step="0.01"
+                    placeholder="e.g. 2500"
+                    required
+                >
+
+                <label for="content">Travel Experience</label>
+                <textarea
+                    id="content"
+                    name="content"
+                    placeholder="Describe the places you visited and your experience..."
+                    required
+                ></textarea>
+
+                <button class="primary-button" type="submit">
+                    Save My Trip ✨
+                </button>
+            </form>
+        </section>
+
+        <section class="panel">
+            <h2>🔎 Find a Trip</h2>
+
+            <form action="{{ url_for('home') }}" method="GET" class="search-form">
+                <input
+                    type="search"
+                    name="search"
+                    value="{{ search }}"
+                    placeholder="Search your trips..."
+                >
+
+                <button class="primary-button" type="submit">Search</button>
+
+                <a class="small-button" href="{{ url_for('home') }}">Show All</a>
+            </form>
+        </section>
+
+        <section>
+            <h2>📖 My Travel Memories</h2>
+
+            {% if entries %}
+                <div class="entry-list">
+                    {% for entry in entries %}
+                        <article class="entry-card">
+                            <h3>✈️ {{ entry['title'] }}</h3>
+
+                            <p class="entry-date">
+                                📍 {{ entry['destination'] if 'destination' in entry.keys() else 'Destination not available' }}
+                            </p>
+
+                            <p class="entry-date">
+                                📅 {{ entry['entry_date'] }}
+                            </p>
+
+                            <p>
+                                💰 Expenses: ₹{{ entry['expenses'] if 'expenses' in entry.keys() and entry['expenses'] is not none else '0' }}
+                            </p>
+
+                            <p class="entry-content">{{ entry['content'] }}</p>
+
+                            <div class="entry-actions">
+                                <a class="small-button"
+                                   href="{{ url_for('edit', entry_id=entry['id']) }}">
+                                    ✏️ Edit
+                                </a>
+
+                                <form
+                                    action="{{ url_for('delete', entry_id=entry['id']) }}"
+                                    method="POST"
+                                    onsubmit="return confirm('Delete this trip?');"
+                                >
+                                    <button class="small-button delete-button" type="submit">
+                                        🗑 Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <h3>🌄 Your travel story starts here!</h3>
+                    <p>Record your first trip to begin your travel diary.</p>
+                </div>
+            {% endif %}
+        </section>
+
+    </main>
+
+    <footer>
+        Made with 💜 for your journeys · Digital Diary Application
+    </footer>
+
+    <script>
+        document.getElementById("today-date").textContent =
+            new Date().toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "short",
+                year: "numeric"
+            });
+    </script>
+
+</body>
+</html>
