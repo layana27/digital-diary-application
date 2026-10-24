@@ -1,4 +1,4 @@
-
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -206,91 +206,4 @@
     <section class="welcome">
         <h2>Welcome, {{ user_name | default('User') }}! 👋</h2>
         <p>
-            Your personal space to record memories, plan your studies,
-            manage expenses, track health, and organize everyday life.
-        </p>
-    </section>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="messages">
-                {% for category, message in messages %}
-                    <div class="message {% if category == 'error' %}error{% endif %}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
-
-    <h2 class="section-title">Your Diary Modules</h2>
-
-    <section class="modules">
-
-        {% set module_details = {
-            'personal': {
-                'icon': '📖',
-                'description': 'Write personal thoughts, memories, experiences, and important moments.'
-            },
-            'travel': {
-                'icon': '✈️',
-                'description': 'Record destinations, travel experiences, itineraries, and trip memories.'
-            },
-            'study': {
-                'icon': '📚',
-                'description': 'Organize subjects, study plans, learning goals, and completion status.'
-            },
-            'expense': {
-                'icon': '💰',
-                'description': 'Record expenses, categorize spending, and review your monthly budget.'
-            },
-            'health': {
-                'icon': '❤️',
-                'description': 'Track water intake, exercise, sleep, meditation, and health notes.'
-            },
-            'daily': {
-                'icon': '🗓️',
-                'description': 'Keep daily records, tasks, activities, and everyday experiences.'
-            }
-        } %}
-
-        {% for key, name in categories.items() %}
-            <article class="module-card">
-                <div class="module-icon">
-                    {{ module_details.get(key, {}).get('icon', '📝') }}
-                </div>
-
-                <h3>{{ name }}</h3>
-
-                <p>
-                    {{ module_details.get(key, {}).get(
-                        'description',
-                        'Create and manage your diary entries.'
-                    ) }}
-                </p>
-
-                <div class="count">
-                    Entries saved: {{ counts.get(key, 0) }}
-                </div>
-
-                <a class="open-link"
-                   href="{{ url_for('module', category=key) }}">
-                    Open Module →
-                </a>
-            </article>
-        {% endfor %}
-
-    </section>
-
-    <div class="bottom-links">
-        <a href="{{ url_for('reports') }}">📊 View Reports</a>
-    </div>
-
-</main>
-
-<footer>
-    Digital Diary Application · Keep your memories organized
-</footer>
-
-</body>
-</html>
+            Your personal space to record memories
