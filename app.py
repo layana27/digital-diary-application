@@ -22,29 +22,24 @@ app.secret_key = os.environ.get(
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 
-# Six diary modules
+# Four active diary modules
 CATEGORIES = {
-    "health": "Health Diary",
     "expense": "Expense Diary",
+    "study": "Study Plan",
+    "health": "Health Diary",
     "personal": "Personal Diary",
-    "study": "Study Planner",
-    "travel": "Travel Diary",
-    "activity": "Daily Activity Diary",
 }
 
 CATEGORY_ALIASES = {
-    "health": "health",
-    "Health Diary": "health",
     "expense": "expense",
     "Expense Diary": "expense",
+    "study": "study",
+    "Study Plan": "study",
+    "Study Planner": "study",
+    "health": "health",
+    "Health Diary": "health",
     "personal": "personal",
     "Personal Diary": "personal",
-    "study": "study",
-    "Study Planner": "study",
-    "travel": "travel",
-    "Travel Diary": "travel",
-    "activity": "activity",
-    "Daily Activity Diary": "activity",
 }
 
 
@@ -62,7 +57,6 @@ def get_db():
 
 
 def init_db():
-    """Create missing tables and add missing columns safely."""
     with get_db() as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS users (
@@ -85,46 +79,55 @@ def init_db():
                 amount NUMERIC(12, 2),
                 location VARCHAR(255),
                 status VARCHAR(100),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                expense_category VARCHAR(100),
+                study_subject VARCHAR(255),
+                activity VARCHAR(255),
+                exercise_minutes INTEGER,
+                water_glasses NUMERIC(5, 2),
+                water_goal NUMERIC(5, 2),
+                sleep_hours NUMERIC(5, 2),
+                meditation_minutes INTEGER,
+                meals TEXT,
+                health_status VARCHAR(100),
+                period_start DATE,
+                period_end DATE,
+                flow VARCHAR(100),
+                symptoms TEXT
             )
         """)
 
-        # Safe migrations: add missing columns without deleting data.
-        conn.execute("""
-            ALTER TABLE entries
-            ADD COLUMN IF NOT EXISTS title VARCHAR(255)
-        """)
-        conn.execute("""
-            ALTER TABLE entries
-            ADD COLUMN IF NOT EXISTS content TEXT DEFAULT ''
-        """)
-        conn.execute("""
-            ALTER TABLE entries
-            ADD COLUMN IF NOT EXISTS entry_date DATE
-                DEFAULT CURRENT_DATE
-        """)
-        conn.execute("""
-            ALTER TABLE entries
-            ADD COLUMN IF NOT EXISTS category VARCHAR(100)
-                DEFAULT 'Personal Diary'
-        """)
-        conn.execute("""
-            ALTER TABLE entries
-            ADD COLUMN IF NOT EXISTS amount NUMERIC(12, 2)
-        """)
-        conn.execute("""
-            ALTER TABLE entries
-            ADD COLUMN IF NOT EXISTS location VARCHAR(255)
-        """)
-        conn.execute("""
-            ALTER TABLE entries
-            ADD COLUMN IF NOT EXISTS status VARCHAR(100)
-        """)
-        conn.execute("""
-            ALTER TABLE entries
-            ADD COLUMN IF NOT EXISTS created_at TIMESTAMP
-                DEFAULT CURRENT_TIMESTAMP
-        """)
+        # Safely add missing columns to an existing database.
+        migrations = {
+            "title": "VARCHAR(255)",
+            "content": "TEXT DEFAULT ''",
+            "entry_date": "DATE DEFAULT CURRENT_DATE",
+            "category": "VARCHAR(100) DEFAULT 'Personal Diary'",
+            "amount": "NUMERIC(12, 2)",
+            "location": "VARCHAR(255)",
+            "status": "VARCHAR(100)",
+            "created_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+            "expense_category": "VARCHAR(100)",
+            "study_subject": "VARCHAR(255)",
+            "activity": "VARCHAR(255)",
+            "exercise_minutes": "INTEGER",
+            "water_glasses": "NUMERIC(5, 2)",
+            "water_goal": "NUMERIC(5, 2)",
+            "sleep_hours": "NUMERIC(5, 2)",
+            "meditation_minutes": "INTEGER",
+            "meals": "TEXT",
+            "health_status": "VARCHAR(100)",
+            "period_start": "DATE",
+            "period_end": "DATE",
+            "flow": "VARCHAR(100)",
+            "symptoms": "TEXT",
+        }
+
+        for column, data_type in migrations.items():
+            conn.execute(
+                f"ALTER TABLE entries ADD COLUMN IF NOT EXISTS "
+                f"{column} {data_type}"
+            )
 
         conn.execute("""
             UPDATE entries
@@ -151,7 +154,6 @@ def login_required(function):
 def get_category_key(category):
     if not category:
         return None
-
     return CATEGORY_ALIASES.get(category.strip())
 
 
@@ -244,7 +246,10 @@ def dashboard():
             SELECT COUNT(*) AS total
             FROM entries
             WHERE user_id = %s
-        """, (session["user_id"],)).fetchone()
+              AND category = ANY(%s)
+        """, (
+            session["user_id"], list(CATEGORIES.values())
+        )).fetchone()
 
     return render_template(
         "dashboard.html",
@@ -265,6 +270,7 @@ def module(category):
 
     category_name = CATEGORIES[category_key]
     search = request.args.get("search", "").strip()
+    user_id = session["user_id"]
 
     with get_db() as conn:
         if search:
@@ -276,10 +282,14 @@ def module(category):
                   AND (
                       title ILIKE %s OR content ILIKE %s
                       OR COALESCE(location, '') ILIKE %s
+                      OR COALESCE(expense_category, '') ILIKE %s
+                      OR COALESCE(study_subject, '') ILIKE %s
+                      OR COALESCE(activity, '') ILIKE %s
                   )
                 ORDER BY entry_date DESC, id DESC
             """, (
-                session["user_id"], category_name,
+                user_id, category_name,
+                f"%{search}%", f"%{search}%", f"%{search}%",
                 f"%{search}%", f"%{search}%", f"%{search}%"
             )).fetchall()
         else:
@@ -288,14 +298,27 @@ def module(category):
                 FROM entries
                 WHERE user_id = %s AND category = %s
                 ORDER BY entry_date DESC, id DESC
-            """, (session["user_id"], category_name)).fetchall()
+            """, (user_id, category_name)).fetchall()
 
         expense_summary = conn.execute("""
-            SELECT COALESCE(SUM(amount), 0) AS total_amount
+            SELECT
+                COALESCE(SUM(amount), 0) AS total,
+                COALESCE(SUM(amount), 0) AS total_amount,
+                0::NUMERIC AS budget
             FROM entries
             WHERE user_id = %s
               AND category = 'Expense Diary'
-        """, (session["user_id"],)).fetchone()
+        """, (user_id,)).fetchone()
+
+        health_summary = conn.execute("""
+            SELECT
+                COALESCE(AVG(water_glasses), 0) AS average_water,
+                COALESCE(AVG(sleep_hours), 0) AS average_sleep,
+                COALESCE(SUM(exercise_minutes), 0) AS total_exercise
+            FROM entries
+            WHERE user_id = %s
+              AND category = 'Health Diary'
+        """, (user_id,)).fetchone()
 
     return render_template(
         "module.html",
@@ -304,7 +327,8 @@ def module(category):
         entries=entries,
         search=search,
         today=date.today().isoformat(),
-        expense_summary=expense_summary
+        expense_summary=expense_summary,
+        health_summary=health_summary
     )
 
 
@@ -322,39 +346,82 @@ def add(category):
     entry_date = request.form.get("entry_date") or date.today().isoformat()
     location = request.form.get("location", "").strip() or None
     status = request.form.get("status", "").strip() or None
+
     amount_text = request.form.get("amount", "").strip()
+    expense_category = request.form.get("expense_category", "").strip() or None
+    study_subject = request.form.get("study_subject", "").strip() or None
+
+    activity = request.form.get("activity", "").strip() or None
+    exercise_text = request.form.get("exercise_minutes", "").strip()
+    water_text = request.form.get("water_glasses", "").strip()
+    goal_text = request.form.get("water_goal", "").strip()
+    sleep_text = request.form.get("sleep_hours", "").strip()
+    meditation_text = request.form.get("meditation_minutes", "").strip()
+    meals = request.form.get("meals", "").strip() or None
+    health_status = request.form.get("health_status", "").strip() or None
+    period_start = request.form.get("period_start", "").strip() or None
+    period_end = request.form.get("period_end", "").strip() or None
+    flow = request.form.get("flow", "").strip() or None
+    symptoms = request.form.get("symptoms", "").strip() or None
 
     if not title:
         flash("Please enter a title.", "danger")
         return redirect(url_for("module", category=category_key))
 
-    amount = None
-    if amount_text:
-        try:
-            amount = float(amount_text)
-            if amount < 0:
-                raise ValueError
-        except ValueError:
-            flash("Please enter a valid non-negative amount.", "danger")
-            return redirect(url_for("module", category=category_key))
+    try:
+        amount = float(amount_text) if amount_text else None
+        exercise_minutes = int(exercise_text) if exercise_text else None
+        water_glasses = float(water_text) if water_text else None
+        water_goal = float(goal_text) if goal_text else None
+        sleep_hours = float(sleep_text) if sleep_text else None
+        meditation_minutes = int(meditation_text) if meditation_text else None
+
+        if amount is not None and amount < 0:
+            raise ValueError
+        if exercise_minutes is not None and exercise_minutes < 0:
+            raise ValueError
+        if water_glasses is not None and water_glasses < 0:
+            raise ValueError
+        if water_goal is not None and water_goal < 0:
+            raise ValueError
+        if sleep_hours is not None and sleep_hours < 0:
+            raise ValueError
+        if meditation_minutes is not None and meditation_minutes < 0:
+            raise ValueError
+
+    except (ValueError, TypeError):
+        flash("Please enter valid non-negative numbers.", "danger")
+        return redirect(url_for("module", category=category_key))
 
     try:
         with get_db() as conn:
             conn.execute("""
-                INSERT INTO entries
-                    (user_id, title, content, entry_date, category,
-                     amount, location, status)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO entries (
+                    user_id, title, content, entry_date, category,
+                    amount, location, status, expense_category,
+                    study_subject, activity, exercise_minutes,
+                    water_glasses, water_goal, sleep_hours,
+                    meditation_minutes, meals, health_status,
+                    period_start, period_end, flow, symptoms
+                )
+                VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                )
             """, (
                 session["user_id"], title, content, entry_date,
-                CATEGORIES[category_key], amount, location, status
+                CATEGORIES[category_key], amount, location, status,
+                expense_category, study_subject, activity,
+                exercise_minutes, water_glasses, water_goal,
+                sleep_hours, meditation_minutes, meals, health_status,
+                period_start, period_end, flow, symptoms
             ))
 
         flash("Diary entry saved successfully.", "success")
 
     except Exception:
         app.logger.exception("Could not save diary entry.")
-        flash("Could not save the entry. Please check your input.", "danger")
+        flash("Could not save the entry. Please check the Render logs.", "danger")
 
     return redirect(url_for("module", category=category_key))
 
@@ -382,25 +449,26 @@ def edit(entry_id):
             flash("Title cannot be empty.", "danger")
             return redirect(url_for("edit", entry_id=entry_id))
 
-        amount = None
-        if amount_text:
-            try:
-                amount = float(amount_text)
-                if amount < 0:
-                    raise ValueError
-            except ValueError:
-                flash("Please enter a valid amount.", "danger")
-                return redirect(url_for("edit", entry_id=entry_id))
+        try:
+            amount = float(amount_text) if amount_text else None
+            if amount is not None and amount < 0:
+                raise ValueError
+        except ValueError:
+            flash("Please enter a valid non-negative amount.", "danger")
+            return redirect(url_for("edit", entry_id=entry_id))
 
         with get_db() as conn:
             conn.execute("""
                 UPDATE entries
                 SET title = %s, content = %s, entry_date = %s,
-                    location = %s, status = %s, amount = %s
+                    location = %s, status = %s, amount = %s,
+                    expense_category = %s, study_subject = %s
                 WHERE id = %s AND user_id = %s
             """, (
-                title, content, entry_date, location, status,
-                amount, entry_id, session["user_id"]
+                title, content, entry_date, location, status, amount,
+                request.form.get("expense_category", "").strip() or None,
+                request.form.get("study_subject", "").strip() or None,
+                entry_id, session["user_id"]
             ))
 
         flash("Entry updated successfully.", "success")
@@ -410,7 +478,7 @@ def edit(entry_id):
         "edit.html",
         entry=entry,
         category=category_key,
-        category_name=CATEGORIES[category_key]
+        category_name=CATEGORIES.get(category_key, "Personal Diary")
     )
 
 
@@ -454,7 +522,10 @@ def reports():
         """, (session["user_id"],)).fetchall()
 
         expense_summary = conn.execute("""
-            SELECT COALESCE(SUM(amount), 0) AS total_amount
+            SELECT
+                COALESCE(SUM(amount), 0) AS total,
+                COALESCE(SUM(amount), 0) AS total_amount,
+                0::NUMERIC AS budget
             FROM entries
             WHERE user_id = %s
               AND category = 'Expense Diary'
@@ -469,7 +540,7 @@ def reports():
     )
 
 
-# Initialise tables when the application starts.
+# Initialise database tables and migrations.
 init_db()
 
 
