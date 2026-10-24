@@ -1,36 +1,35 @@
+
+import os
+from functools import wraps
+from datetime import date
+
+import psycopg
+from psycopg.rows import dict_row
+from psycopg import IntegrityError
+
 from flask import (
     Flask, render_template, request,
     redirect, url_for, session, flash
 )
-import os
-from functools import wraps
-from datetime import date
-import psycopg
-from psycopg.rows import dict_row
-from psycopg import IntegrityError
 from werkzeug.security import (
-    generate_password_hash,
-    check_password_hash
+    generate_password_hash, check_password_hash
 )
 
 app = Flask(__name__)
-
 app.secret_key = os.environ.get(
-    "SECRET_KEY", "digital-diary-local-key"
+    "SECRET_KEY", "digital-diary-local-development-key"
 )
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace(
-        "postgres://", "postgresql://", 1
-    )
-
+# Six diary modules
 CATEGORIES = {
     "health": "Health Diary",
     "expense": "Expense Diary",
     "personal": "Personal Diary",
     "study": "Study Planner",
+    "travel": "Travel Diary",
+    "activity": "Daily Activity Diary",
 }
 
 CATEGORY_ALIASES = {
@@ -42,29 +41,34 @@ CATEGORY_ALIASES = {
     "Personal Diary": "personal",
     "study": "study",
     "Study Planner": "study",
+    "travel": "travel",
+    "Travel Diary": "travel",
+    "activity": "activity",
+    "Daily Activity Diary": "activity",
 }
 
 
 def get_db():
     if not DATABASE_URL:
         raise RuntimeError(
-            "DATABASE_URL is missing. Configure it in your environment."
+            "DATABASE_URL is missing. Set it in Render Environment."
         )
 
     return psycopg.connect(
         DATABASE_URL,
         row_factory=dict_row,
-        connect_timeout=15
+        connect_timeout=10
     )
 
 
 def init_db():
+    """Create missing tables and add missing columns safely."""
     with get_db() as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
-                name TEXT,
-                email TEXT NOT NULL UNIQUE,
+                name VARCHAR(150) NOT NULL,
+                email VARCHAR(255) UNIQUE NOT NULL,
                 password_hash TEXT NOT NULL
             )
         """)
@@ -72,250 +76,99 @@ def init_db():
         conn.execute("""
             CREATE TABLE IF NOT EXISTS entries (
                 id SERIAL PRIMARY KEY,
-                title TEXT NOT NULL,
-                content TEXT NOT NULL,
-                entry_date DATE NOT NULL,
-                user_id INTEGER REFERENCES users(id)
+                user_id INTEGER NOT NULL REFERENCES users(id)
                     ON DELETE CASCADE,
-                category TEXT NOT NULL DEFAULT 'Personal Diary',
-                destination TEXT,
-                expenses DOUBLE PRECISION,
-                status TEXT DEFAULT 'Pending',
-                photo TEXT
+                title VARCHAR(255) NOT NULL,
+                content TEXT DEFAULT '',
+                entry_date DATE NOT NULL DEFAULT CURRENT_DATE,
+                category VARCHAR(100) NOT NULL DEFAULT 'Personal Diary',
+                amount NUMERIC(12, 2),
+                location VARCHAR(255),
+                status VARCHAR(100),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
 
+        # Safe migrations: add missing columns without deleting data.
         conn.execute("""
-            ALTER TABLE users
-            ADD COLUMN IF NOT EXISTS name TEXT
+            ALTER TABLE entries
+            ADD COLUMN IF NOT EXISTS title VARCHAR(255)
         """)
-
-        columns = [
-            ("user_id", "INTEGER REFERENCES users(id) ON DELETE CASCADE"),
-            ("category", "TEXT DEFAULT 'Personal Diary'"),
-            ("destination", "TEXT"),
-            ("expenses", "DOUBLE PRECISION"),
-            ("status", "TEXT DEFAULT 'Pending'"),
-            ("photo", "TEXT"),
-            ("mood", "TEXT"),
-            ("gratitude", "TEXT"),
-            ("water_intake", "DOUBLE PRECISION"),
-            ("sleep_hours", "DOUBLE PRECISION"),
-            ("exercise_minutes", "INTEGER"),
-            ("meditation_minutes", "INTEGER"),
-            ("meals", "TEXT"),
-            ("period_start", "DATE"),
-            ("period_end", "DATE"),
-            ("flow_level", "TEXT"),
-            ("symptoms", "TEXT"),
-            ("subject", "TEXT"),
-            ("deadline", "DATE"),
-            ("priority", "TEXT DEFAULT 'Medium'"),
-            ("planned_hours", "DOUBLE PRECISION"),
-            ("actual_hours", "DOUBLE PRECISION"),
-            ("expense_category", "TEXT"),
-            ("monthly_budget", "DOUBLE PRECISION"),
-        ]
-
-        for column, definition in columns:
-            conn.execute(
-                f"ALTER TABLE entries ADD COLUMN IF NOT EXISTS "
-                f"{column} {definition}"
-            )
+        conn.execute("""
+            ALTER TABLE entries
+            ADD COLUMN IF NOT EXISTS content TEXT DEFAULT ''
+        """)
+        conn.execute("""
+            ALTER TABLE entries
+            ADD COLUMN IF NOT EXISTS entry_date DATE
+                DEFAULT CURRENT_DATE
+        """)
+        conn.execute("""
+            ALTER TABLE entries
+            ADD COLUMN IF NOT EXISTS category VARCHAR(100)
+                DEFAULT 'Personal Diary'
+        """)
+        conn.execute("""
+            ALTER TABLE entries
+            ADD COLUMN IF NOT EXISTS amount NUMERIC(12, 2)
+        """)
+        conn.execute("""
+            ALTER TABLE entries
+            ADD COLUMN IF NOT EXISTS location VARCHAR(255)
+        """)
+        conn.execute("""
+            ALTER TABLE entries
+            ADD COLUMN IF NOT EXISTS status VARCHAR(100)
+        """)
+        conn.execute("""
+            ALTER TABLE entries
+            ADD COLUMN IF NOT EXISTS created_at TIMESTAMP
+                DEFAULT CURRENT_TIMESTAMP
+        """)
 
         conn.execute("""
             UPDATE entries
             SET category = 'Personal Diary'
-            WHERE category IS NULL
-               OR category NOT IN (
-                   'Health Diary',
-                   'Expense Diary',
-                   'Personal Diary',
-                   'Study Planner'
-               )
+            WHERE category IS NULL OR TRIM(category) = ''
+        """)
+
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_entries_user_date
+            ON entries(user_id, entry_date DESC)
         """)
 
 
-def login_required(view):
-    @wraps(view)
-    def wrapped_view(*args, **kwargs):
+def login_required(function):
+    @wraps(function)
+    def wrapper(*args, **kwargs):
         if "user_id" not in session:
+            flash("Please log in to continue.", "warning")
             return redirect(url_for("login"))
-        return view(*args, **kwargs)
-    return wrapped_view
+        return function(*args, **kwargs)
+    return wrapper
 
 
 def get_category_key(category):
-    return CATEGORY_ALIASES.get(category)
-
-
-def optional_text(field):
-    return request.form.get(field, "").strip() or None
-
-
-def optional_number(field, minimum=0, maximum=None):
-    raw = request.form.get(field, "").strip()
-
-    if not raw:
+    if not category:
         return None
 
-    try:
-        value = float(raw)
-    except ValueError:
-        raise ValueError(f"{field} must be a valid number.")
-
-    if not __import__("math").isfinite(value):
-        raise ValueError(f"{field} must be a valid number.")
-
-    if value < minimum:
-        raise ValueError(f"{field} cannot be less than {minimum}.")
-
-    if maximum is not None and value > maximum:
-        raise ValueError(f"{field} exceeds the allowed maximum.")
-
-    return value
+    return CATEGORY_ALIASES.get(category.strip())
 
 
-def optional_integer(field, minimum=0, maximum=None):
-    value = optional_number(field, minimum, maximum)
-
-    if value is None:
-        return None
-
-    if not value.is_integer():
-        raise ValueError(f"{field} must be a whole number.")
-
-    return int(value)
+def get_entry(entry_id, user_id):
+    with get_db() as conn:
+        return conn.execute("""
+            SELECT *
+            FROM entries
+            WHERE id = %s AND user_id = %s
+        """, (entry_id, user_id)).fetchone()
 
 
-def optional_date(field):
-    raw = request.form.get(field, "").strip()
-
-    if not raw:
-        return None
-
-    return date.fromisoformat(raw)
-
-
-def collect_extra_fields(category_key):
-    data = {
-        "destination": None,
-        "expenses": None,
-        "mood": None,
-        "gratitude": None,
-        "water_intake": None,
-        "sleep_hours": None,
-        "exercise_minutes": None,
-        "meditation_minutes": None,
-        "meals": None,
-        "period_start": None,
-        "period_end": None,
-        "flow_level": None,
-        "symptoms": None,
-        "subject": None,
-        "deadline": None,
-        "priority": "Medium",
-        "planned_hours": None,
-        "actual_hours": None,
-        "expense_category": None,
-        "monthly_budget": None,
-    }
-
-    if category_key == "personal":
-        data["mood"] = optional_text("mood")
-        data["gratitude"] = optional_text("gratitude")
-
-    elif category_key == "health":
-        data["water_intake"] = optional_number("water_intake", 0, 20)
-        data["sleep_hours"] = optional_number("sleep_hours", 0, 24)
-        data["exercise_minutes"] = optional_integer(
-            "exercise_minutes", 0, 1440
-        )
-        data["meditation_minutes"] = optional_integer(
-            "meditation_minutes", 0, 1440
-        )
-        data["meals"] = optional_text("meals")
-        data["period_start"] = optional_date("period_start")
-        data["period_end"] = optional_date("period_end")
-        data["flow_level"] = optional_text("flow_level")
-        data["symptoms"] = optional_text("symptoms")
-
-        if data["flow_level"] and data["flow_level"] not in {
-            "Light", "Medium", "Heavy"
-        }:
-            raise ValueError("Please select a valid period flow level.")
-
-        if (
-            data["period_start"]
-            and data["period_end"]
-            and data["period_end"] < data["period_start"]
-        ):
-            raise ValueError(
-                "Period end date cannot be before start date."
-            )
-
-    elif category_key == "study":
-        data["subject"] = optional_text("subject")
-        data["deadline"] = optional_date("deadline")
-        data["priority"] = (
-            request.form.get("priority", "Medium").strip() or "Medium"
-        )
-
-        if data["priority"] not in {"Low", "Medium", "High"}:
-            raise ValueError("Please select a valid task priority.")
-
-        data["planned_hours"] = optional_number("planned_hours", 0, 24)
-        data["actual_hours"] = optional_number("actual_hours", 0, 24)
-
-    elif category_key == "expense":
-        data["expenses"] = optional_number("expenses", 0)
-        data["expense_category"] = optional_text("expense_category")
-        data["monthly_budget"] = optional_number("monthly_budget", 0)
-
-        allowed_categories = {
-            "House Rent",
-            "Food & Groceries",
-            "Transportation",
-            "Electricity/Phone/Internet",
-            "Health & Personal Care",
-            "Shopping & Entertainment",
-            "Other Expenses",
-            "Savings",
-        }
-
-        if data["expense_category"] and (
-            data["expense_category"] not in allowed_categories
-        ):
-            raise ValueError("Please select a valid expense category.")
-
-        if data["expenses"] is None:
-            raise ValueError("Please enter the expense amount.")
-
-    return data
-
-
-EXTRA_COLUMNS = [
-    "destination",
-    "expenses",
-    "mood",
-    "gratitude",
-    "water_intake",
-    "sleep_hours",
-    "exercise_minutes",
-    "meditation_minutes",
-    "meals",
-    "period_start",
-    "period_end",
-    "flow_level",
-    "symptoms",
-    "subject",
-    "deadline",
-    "priority",
-    "planned_hours",
-    "actual_hours",
-    "expense_category",
-    "monthly_budget",
-]
+@app.route("/")
+def home():
+    if "user_id" in session:
+        return redirect(url_for("dashboard"))
+    return redirect(url_for("login"))
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -326,35 +179,27 @@ def register():
         password = request.form.get("password", "")
 
         if not name or not email or not password:
-            flash("Please fill in all fields.")
+            flash("Please fill in all required fields.", "danger")
             return render_template("register.html")
 
-        if len(password) < 8:
-            flash("Password must be at least 8 characters.")
+        if len(password) < 6:
+            flash("Password must contain at least 6 characters.", "danger")
             return render_template("register.html")
+
+        password_hash = generate_password_hash(password)
 
         try:
             with get_db() as conn:
-                user = conn.execute("""
+                conn.execute("""
                     INSERT INTO users (name, email, password_hash)
                     VALUES (%s, %s, %s)
-                    RETURNING id
-                """, (
-                    name,
-                    email,
-                    generate_password_hash(password)
-                )).fetchone()
+                """, (name, email, password_hash))
+
+            flash("Registration successful. Please log in.", "success")
+            return redirect(url_for("login"))
 
         except IntegrityError:
-            flash("This email is already registered. Please log in.")
-            return render_template("register.html")
-
-        session.clear()
-        session["user_id"] = user["id"]
-        session["name"] = name
-        session["email"] = email
-
-        return redirect(url_for("dashboard"))
+            flash("This email is already registered.", "danger")
 
     return render_template("register.html")
 
@@ -366,33 +211,29 @@ def login():
         password = request.form.get("password", "")
 
         with get_db() as conn:
-            user = conn.execute(
-                "SELECT * FROM users WHERE email = %s",
-                (email,)
-            ).fetchone()
+            user = conn.execute("""
+                SELECT id, name, email, password_hash
+                FROM users
+                WHERE LOWER(email) = %s
+            """, (email,)).fetchone()
 
         if user and check_password_hash(user["password_hash"], password):
             session.clear()
             session["user_id"] = user["id"]
+            session["name"] = user["name"]
             session["email"] = user["email"]
-            session["name"] = user["name"] or email.split("@")[0]
             return redirect(url_for("dashboard"))
 
-        flash("Incorrect email or password.")
+        flash("Invalid email or password.", "danger")
 
     return render_template("login.html")
 
 
-@app.route("/logout", methods=["POST"])
+@app.route("/logout")
 def logout():
     session.clear()
+    flash("You have been logged out.", "success")
     return redirect(url_for("login"))
-
-
-@app.route("/")
-@login_required
-def home():
-    return redirect(url_for("dashboard"))
 
 
 @app.route("/dashboard")
@@ -408,91 +249,53 @@ def dashboard():
     return render_template(
         "dashboard.html",
         name=session.get("name", "Friend"),
-        total_entries=result["total"]
+        total_entries=result["total"],
+        categories=CATEGORIES
     )
 
 
-@app.route("/module/<path:category>")
+@app.route("/module/<category>")
 @login_required
 def module(category):
     category_key = get_category_key(category)
 
-    if category_key is None:
-        return "Module not found", 404
+    if category_key not in CATEGORIES:
+        flash("Module not found.", "danger")
+        return redirect(url_for("dashboard"))
 
     category_name = CATEGORIES[category_key]
     search = request.args.get("search", "").strip()
-    expense_summary = None
 
     with get_db() as conn:
         if search:
-            wildcard = f"%{search}%"
             entries = conn.execute("""
-                SELECT * FROM entries
+                SELECT *
+                FROM entries
                 WHERE user_id = %s
                   AND category = %s
                   AND (
-                      title ILIKE %s
-                      OR content ILIKE %s
-                      OR COALESCE(subject, '') ILIKE %s
-                      OR COALESCE(expense_category, '') ILIKE %s
-                      OR COALESCE(mood, '') ILIKE %s
+                      title ILIKE %s OR content ILIKE %s
+                      OR COALESCE(location, '') ILIKE %s
                   )
                 ORDER BY entry_date DESC, id DESC
             """, (
                 session["user_id"], category_name,
-                wildcard, wildcard, wildcard, wildcard, wildcard
+                f"%{search}%", f"%{search}%", f"%{search}%"
             )).fetchall()
         else:
             entries = conn.execute("""
-                SELECT * FROM entries
+                SELECT *
+                FROM entries
                 WHERE user_id = %s AND category = %s
                 ORDER BY entry_date DESC, id DESC
-            """, (
-                session["user_id"], category_name
-            )).fetchall()
+            """, (session["user_id"], category_name)).fetchall()
 
-        if category_key == "expense":
-            summary = conn.execute("""
-                SELECT
-                    COALESCE(SUM(expenses), 0) AS spent,
-                    COALESCE(MAX(monthly_budget), 0) AS budget
-                FROM entries
-                WHERE user_id = %s
-                  AND category = 'Expense Diary'
-                  AND entry_date >= DATE_TRUNC('month', CURRENT_DATE)::date
-                  AND entry_date < (
-                      DATE_TRUNC('month', CURRENT_DATE)
-                      + INTERVAL '1 month'
-                  )::date
-            """, (session["user_id"],)).fetchone()
-
-            category_totals = conn.execute("""
-                SELECT
-                    COALESCE(expense_category, 'Uncategorized')
-                        AS expense_category,
-                    COALESCE(SUM(expenses), 0) AS total
-                FROM entries
-                WHERE user_id = %s
-                  AND category = 'Expense Diary'
-                  AND entry_date >= DATE_TRUNC('month', CURRENT_DATE)::date
-                  AND entry_date < (
-                      DATE_TRUNC('month', CURRENT_DATE)
-                      + INTERVAL '1 month'
-                  )::date
-                GROUP BY expense_category
-                ORDER BY total DESC
-            """, (session["user_id"],)).fetchall()
-
-            spent = float(summary["spent"] or 0)
-            budget = float(summary["budget"] or 0)
-
-            expense_summary = {
-                "spent": spent,
-                "budget": budget,
-                "remaining": budget - spent,
-                "categories": category_totals,
-            }
+        expense_summary = conn.execute("""
+            SELECT COALESCE(SUM(amount), 0) AS total_amount
+            FROM entries
+            WHERE user_id = %s
+              AND category = 'Expense Diary'
+        """, (session["user_id"],)).fetchone()
 
     return render_template(
         "module.html",
@@ -505,228 +308,168 @@ def module(category):
     )
 
 
-@app.route("/add/<path:category>", methods=["POST"])
+@app.route("/add/<category>", methods=["POST"])
 @login_required
 def add(category):
     category_key = get_category_key(category)
 
-    if category_key is None:
-        return "Module not found", 404
+    if category_key not in CATEGORIES:
+        flash("Invalid diary module.", "danger")
+        return redirect(url_for("dashboard"))
 
     title = request.form.get("title", "").strip()
     content = request.form.get("content", "").strip()
-    entry_date_text = request.form.get("entry_date", "").strip()
-    status = request.form.get("status", "Pending").strip()
+    entry_date = request.form.get("entry_date") or date.today().isoformat()
+    location = request.form.get("location", "").strip() or None
+    status = request.form.get("status", "").strip() or None
+    amount_text = request.form.get("amount", "").strip()
 
-    if not title or not content or not entry_date_text:
-        flash("Please complete the required fields.")
+    if not title:
+        flash("Please enter a title.", "danger")
         return redirect(url_for("module", category=category_key))
 
-    if category_key == "study":
-        if status not in {"Pending", "In Progress", "Completed"}:
-            status = "Pending"
-    elif category_key == "health":
-        status = "Completed" if status == "Completed" else "Pending"
-    else:
-        status = "Pending"
+    amount = None
+    if amount_text:
+        try:
+            amount = float(amount_text)
+            if amount < 0:
+                raise ValueError
+        except ValueError:
+            flash("Please enter a valid non-negative amount.", "danger")
+            return redirect(url_for("module", category=category_key))
 
     try:
-        entry_date = date.fromisoformat(entry_date_text)
-        extra = collect_extra_fields(category_key)
-
-        columns = [
-            "title", "content", "entry_date", "user_id",
-            "category", "status"
-        ] + EXTRA_COLUMNS
-
-        values = [
-            title, content, entry_date, session["user_id"],
-            CATEGORIES[category_key], status
-        ] + [extra[column] for column in EXTRA_COLUMNS]
-
-        placeholders = ", ".join(["%s"] * len(columns))
-        column_sql = ", ".join(columns)
-
         with get_db() as conn:
-            conn.execute(
-                f"INSERT INTO entries ({column_sql}) VALUES ({placeholders})",
-                values
-            )
+            conn.execute("""
+                INSERT INTO entries
+                    (user_id, title, content, entry_date, category,
+                     amount, location, status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                session["user_id"], title, content, entry_date,
+                CATEGORIES[category_key], amount, location, status
+            ))
 
-    except (ValueError, TypeError) as error:
-        flash(f"Please check the information entered. {error}")
-        return redirect(url_for("module", category=category_key))
+        flash("Diary entry saved successfully.", "success")
 
-    flash("Entry saved successfully!")
+    except Exception:
+        app.logger.exception("Could not save diary entry.")
+        flash("Could not save the entry. Please check your input.", "danger")
+
     return redirect(url_for("module", category=category_key))
 
 
 @app.route("/edit/<int:entry_id>", methods=["GET", "POST"])
 @login_required
 def edit(entry_id):
-    user_id = session["user_id"]
+    entry = get_entry(entry_id, session["user_id"])
 
-    with get_db() as conn:
-        entry = conn.execute("""
-            SELECT * FROM entries
-            WHERE id = %s AND user_id = %s
-        """, (entry_id, user_id)).fetchone()
+    if not entry:
+        flash("Entry not found.", "danger")
+        return redirect(url_for("dashboard"))
 
-        if entry is None:
-            return "Entry not found", 404
+    category_key = get_category_key(entry["category"]) or "personal"
 
-        category_key = get_category_key(entry["category"])
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        content = request.form.get("content", "").strip()
+        entry_date = request.form.get("entry_date") or date.today().isoformat()
+        location = request.form.get("location", "").strip() or None
+        status = request.form.get("status", "").strip() or None
+        amount_text = request.form.get("amount", "").strip()
 
-        if category_key is None:
-            return "Module not found", 404
+        if not title:
+            flash("Title cannot be empty.", "danger")
+            return redirect(url_for("edit", entry_id=entry_id))
 
-        if request.method == "POST":
-            title = request.form.get("title", "").strip()
-            content = request.form.get("content", "").strip()
-            entry_date_text = request.form.get("entry_date", "").strip()
-            status = request.form.get("status", "Pending").strip()
-
-            if not title or not content or not entry_date_text:
-                flash("Please complete the required fields.")
-                return redirect(url_for("edit", entry_id=entry_id))
-
-            if category_key == "study":
-                if status not in {"Pending", "In Progress", "Completed"}:
-                    status = "Pending"
-            elif category_key == "health":
-                status = "Completed" if status == "Completed" else "Pending"
-            else:
-                status = "Pending"
-
+        amount = None
+        if amount_text:
             try:
-                entry_date = date.fromisoformat(entry_date_text)
-                extra = collect_extra_fields(category_key)
-
-                assignments = [
-                    "title = %s",
-                    "content = %s",
-                    "entry_date = %s",
-                    "status = %s",
-                ] + [f"{column} = %s" for column in EXTRA_COLUMNS]
-
-                values = [
-                    title, content, entry_date, status
-                ] + [extra[column] for column in EXTRA_COLUMNS]
-
-                values.extend([entry_id, user_id])
-
-                with get_db() as update_conn:
-                    update_conn.execute(
-                        "UPDATE entries SET "
-                        + ", ".join(assignments)
-                        + " WHERE id = %s AND user_id = %s",
-                        values
-                    )
-
-            except (ValueError, TypeError) as error:
-                flash(f"Please check the information entered. {error}")
+                amount = float(amount_text)
+                if amount < 0:
+                    raise ValueError
+            except ValueError:
+                flash("Please enter a valid amount.", "danger")
                 return redirect(url_for("edit", entry_id=entry_id))
 
-            flash("Entry updated successfully!")
-            return redirect(url_for("module", category=category_key))
+        with get_db() as conn:
+            conn.execute("""
+                UPDATE entries
+                SET title = %s, content = %s, entry_date = %s,
+                    location = %s, status = %s, amount = %s
+                WHERE id = %s AND user_id = %s
+            """, (
+                title, content, entry_date, location, status,
+                amount, entry_id, session["user_id"]
+            ))
 
-    return render_template("edit.html", entry=entry)
+        flash("Entry updated successfully.", "success")
+        return redirect(url_for("module", category=category_key))
+
+    return render_template(
+        "edit.html",
+        entry=entry,
+        category=category_key,
+        category_name=CATEGORIES[category_key]
+    )
 
 
 @app.route("/delete/<int:entry_id>", methods=["POST"])
 @login_required
 def delete(entry_id):
-    user_id = session["user_id"]
+    entry = get_entry(entry_id, session["user_id"])
+
+    if not entry:
+        flash("Entry not found.", "danger")
+        return redirect(url_for("dashboard"))
+
+    category_key = get_category_key(entry["category"]) or "personal"
 
     with get_db() as conn:
-        entry = conn.execute("""
-            SELECT category FROM entries
+        conn.execute("""
+            DELETE FROM entries
             WHERE id = %s AND user_id = %s
-        """, (entry_id, user_id)).fetchone()
+        """, (entry_id, session["user_id"]))
 
-        if entry:
-            conn.execute("""
-                DELETE FROM entries
-                WHERE id = %s AND user_id = %s
-            """, (entry_id, user_id))
-
-    if entry:
-        category_key = get_category_key(entry["category"])
-        if category_key:
-            return redirect(url_for("module", category=category_key))
-
-    return redirect(url_for("dashboard"))
+    flash("Entry deleted successfully.", "success")
+    return redirect(url_for("module", category=category_key))
 
 
 @app.route("/reports")
 @login_required
 def reports():
-    user_id = session["user_id"]
-
     with get_db() as conn:
-        totals = conn.execute("""
+        total = conn.execute("""
+            SELECT COUNT(*) AS total
+            FROM entries
+            WHERE user_id = %s
+        """, (session["user_id"],)).fetchone()["total"]
+
+        category_counts = conn.execute("""
             SELECT category, COUNT(*) AS total
             FROM entries
             WHERE user_id = %s
             GROUP BY category
             ORDER BY category
-        """, (user_id,)).fetchall()
+        """, (session["user_id"],)).fetchall()
 
-        expense_result = conn.execute("""
-            SELECT COALESCE(SUM(expenses), 0) AS total
+        expense_summary = conn.execute("""
+            SELECT COALESCE(SUM(amount), 0) AS total_amount
             FROM entries
             WHERE user_id = %s
               AND category = 'Expense Diary'
-        """, (user_id,)).fetchone()
-
-        study_result = conn.execute("""
-            SELECT
-                COALESCE(SUM(actual_hours), 0) AS actual_hours,
-                COALESCE(SUM(planned_hours), 0) AS planned_hours,
-                COUNT(*) FILTER (
-                    WHERE status = 'Completed'
-                ) AS completed_tasks,
-                COUNT(*) AS total_tasks
-            FROM entries
-            WHERE user_id = %s
-              AND category = 'Study Planner'
-        """, (user_id,)).fetchone()
-
-        monthly_expenses = conn.execute("""
-            SELECT
-                TO_CHAR(entry_date, 'YYYY-MM') AS month,
-                COALESCE(SUM(expenses), 0) AS total
-            FROM entries
-            WHERE user_id = %s
-              AND category = 'Expense Diary'
-            GROUP BY TO_CHAR(entry_date, 'YYYY-MM')
-            ORDER BY month
-        """, (user_id,)).fetchall()
-
-        subject_hours = conn.execute("""
-            SELECT
-                COALESCE(subject, 'Unspecified') AS subject,
-                COALESCE(SUM(actual_hours), 0) AS hours
-            FROM entries
-            WHERE user_id = %s
-              AND category = 'Study Planner'
-            GROUP BY subject
-            ORDER BY subject
-        """, (user_id,)).fetchall()
+        """, (session["user_id"],)).fetchone()
 
     return render_template(
         "reports.html",
-        totals=totals,
-        expense_total=expense_result["total"],
-        study_actual_hours=study_result["actual_hours"],
-        study_planned_hours=study_result["planned_hours"],
-        completed_tasks=study_result["completed_tasks"],
-        total_tasks=study_result["total_tasks"],
-        monthly_expenses=monthly_expenses,
-        subject_hours=subject_hours
+        name=session.get("name", "Friend"),
+        total_entries=total,
+        category_counts=category_counts,
+        expense_summary=expense_summary
     )
 
 
+# Initialise tables when the application starts.
 init_db()
 
 
