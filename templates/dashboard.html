@@ -7,9 +7,7 @@
     <title>Digital Diary Dashboard</title>
 
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
 
         body {
             margin: 0;
@@ -29,18 +27,11 @@
             flex-wrap: wrap;
         }
 
-        header h1 {
-            margin: 0 0 7px;
-            font-size: 27px;
-        }
-
-        header p {
-            margin: 0;
-            opacity: 0.9;
-        }
+        header h1 { margin: 0 0 7px; font-size: 27px; }
+        header p { margin: 0; opacity: 0.9; }
 
         .logout {
-            background: #fff;
+            background: white;
             color: #5146a5;
             border: 0;
             border-radius: 8px;
@@ -55,17 +46,9 @@
             padding: 0 20px;
         }
 
-        .intro {
-            margin-bottom: 25px;
-        }
-
-        .intro h2 {
-            margin-bottom: 8px;
-        }
-
-        .intro p {
-            color: #73738a;
-        }
+        .intro { margin-bottom: 25px; }
+        .intro h2 { margin-bottom: 8px; }
+        .intro p, .card p { color: #73738a; }
 
         .stats {
             background: white;
@@ -84,7 +67,7 @@
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 20px;
         }
 
@@ -97,23 +80,10 @@
             transition: transform 0.2s;
         }
 
-        .card:hover {
-            transform: translateY(-4px);
-        }
-
-        .emoji {
-            font-size: 34px;
-        }
-
-        .card h3 {
-            margin: 15px 0 9px;
-        }
-
-        .card p {
-            color: #73738a;
-            line-height: 1.6;
-            min-height: 48px;
-        }
+        .card:hover { transform: translateY(-4px); }
+        .emoji { font-size: 34px; }
+        .card h3 { margin: 15px 0 9px; }
+        .card p { line-height: 1.6; min-height: 48px; }
 
         .open {
             display: inline-block;
@@ -125,15 +95,8 @@
             margin-top: 8px;
         }
 
-        .report {
-            margin-top: 28px;
-            text-align: center;
-        }
-
-        .report a {
-            color: #5146a5;
-            font-weight: bold;
-        }
+        .report { margin-top: 28px; text-align: center; }
+        .report a { color: #5146a5; font-weight: bold; }
 
         footer {
             text-align: center;
@@ -141,16 +104,8 @@
             padding: 25px;
         }
 
-        @media (max-width: 800px) {
-            .grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-        }
-
         @media (max-width: 520px) {
-            .grid {
-                grid-template-columns: 1fr;
-            }
+            .grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -184,43 +139,29 @@
         <article class="card">
             <div class="emoji">📔</div>
             <h3>Personal Diary</h3>
-            <p>Record your thoughts, feelings, and memorable moments.</p>
-            <a class="open" href="{{ url_for('module', category='personal') }}">Open Diary →</a>
-        </article>
-
-        <article class="card">
-            <div class="emoji">✈️</div>
-            <h3>Travel Diary</h3>
-            <p>Save destinations, travel memories, dates, and expenses.</p>
-            <a class="open" href="{{ url_for('module', category='travel') }}">Explore Travel →</a>
-        </article>
-
-        <article class="card">
-            <div class="emoji">💰</div>
-            <h3>Expense Diary</h3>
-            <p>Record spending and review your saved expense details.</p>
-            <a class="open" href="{{ url_for('module', category='expense') }}">Track Expenses →</a>
-        </article>
-
-        <article class="card">
-            <div class="emoji">📚</div>
-            <h3>Study Planner</h3>
-            <p>Organize study tasks and track their completion status.</p>
-            <a class="open" href="{{ url_for('module', category='study') }}">Plan Studies →</a>
+            <p>Record your thoughts, feelings, experiences, and memorable moments.</p>
+            <a class="open" href="{{ url_for('module', category='Personal Diary') }}">Open Diary →</a>
         </article>
 
         <article class="card">
             <div class="emoji">🌿</div>
             <h3>Health Diary</h3>
-            <p>Maintain daily wellness notes and healthy habit records.</p>
-            <a class="open" href="{{ url_for('module', category='health') }}">Track Health →</a>
+            <p>Maintain wellness notes, exercise records, sleep details, and healthy habits.</p>
+            <a class="open" href="{{ url_for('module', category='Health Diary') }}">Track Health →</a>
         </article>
 
         <article class="card">
-            <div class="emoji">📅</div>
-            <h3>Daily Activity Diary</h3>
-            <p>Record daily activities, plans, and completed tasks.</p>
-            <a class="open" href="{{ url_for('module', category='activity') }}">View Activities →</a>
+            <div class="emoji">💰</div>
+            <h3>Expense Diary</h3>
+            <p>Record daily spending, expense categories, amounts, and payment details.</p>
+            <a class="open" href="{{ url_for('module', category='Expense Diary') }}">Track Expenses →</a>
+        </article>
+
+        <article class="card">
+            <div class="emoji">📚</div>
+            <h3>Study Planner</h3>
+            <p>Organize study tasks, subjects, deadlines, and completed activities.</p>
+            <a class="open" href="{{ url_for('module', category='Study Planner') }}">Plan Studies →</a>
         </article>
 
     </section>
