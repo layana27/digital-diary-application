@@ -6,11 +6,13 @@ from flask import (
 import os
 from functools import wraps
 from datetime import date
-from urllib.parse import urlparse
 import psycopg
 from psycopg.rows import dict_row
 from psycopg import IntegrityError
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import (
+    generate_password_hash,
+    check_password_hash
+)
 
 app = Flask(__name__)
 
@@ -26,10 +28,33 @@ if DATABASE_URL.startswith("postgres://"):
     )
 
 
+# Four diary modules
+CATEGORIES = {
+    "health": "Health Diary",
+    "expense": "Expense Diary",
+    "personal": "Personal Diary",
+    "study": "Study Planner",
+}
+
+
+# Accept short keys and full module names in URLs
+CATEGORY_ALIASES = {
+    "health": "health",
+    "Health Diary": "health",
+    "expense": "expense",
+    "Expense Diary": "expense",
+    "personal": "personal",
+    "Personal Diary": "personal",
+    "study": "study",
+    "Study Planner": "study",
+}
+
+
 def get_db():
     if not DATABASE_URL:
         raise RuntimeError(
-            "DATABASE_URL is missing. Configure it in your environment."
+            "DATABASE_URL is missing. "
+            "Configure it in your environment."
         )
 
     return psycopg.connect(
@@ -56,8 +81,10 @@ def init_db():
                 title TEXT NOT NULL,
                 content TEXT NOT NULL,
                 entry_date DATE NOT NULL,
-                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                category TEXT NOT NULL DEFAULT 'Personal Diary',
+                user_id INTEGER REFERENCES users(id)
+                    ON DELETE CASCADE,
+                category TEXT NOT NULL
+                    DEFAULT 'Personal Diary',
                 destination TEXT,
                 expenses DOUBLE PRECISION,
                 status TEXT DEFAULT 'Pending',
@@ -65,12 +92,16 @@ def init_db():
             )
         """)
 
-        conn.execute(
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS name TEXT"
-        )
+        conn.execute("""
+            ALTER TABLE users
+            ADD COLUMN IF NOT EXISTS name TEXT
+        """)
 
         for column, definition in [
-            ("user_id", "INTEGER REFERENCES users(id) ON DELETE CASCADE"),
+            (
+                "user_id",
+                "INTEGER REFERENCES users(id) ON DELETE CASCADE"
+            ),
             ("category", "TEXT DEFAULT 'Personal Diary'"),
             ("destination", "TEXT"),
             ("expenses", "DOUBLE PRECISION"),
@@ -82,8 +113,7 @@ def init_db():
                 f"{column} {definition}"
             )
 
-        # Retain only the four selected modules in the application.
-        # Existing records in other categories are not deleted.
+        # Keep existing records and normalize unknown categories.
         conn.execute("""
             UPDATE entries
             SET category = 'Personal Diary'
@@ -106,12 +136,9 @@ def login_required(view):
     return wrapped_view
 
 
-CATEGORIES = {
-    "health": "Health Diary",
-    "expense": "Expense Diary",
-    "personal": "Personal Diary",
-    "study": "Study Planner",
-}
+def get_category_key(category):
+    """Convert a module key or display name into its short key."""
+    return CATEGORY_ALIASES.get(category)
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -176,6 +203,7 @@ def login():
             session["user_id"] = user["id"]
             session["email"] = user["email"]
             session["name"] = user["name"] or email.split("@")[0]
+
             return redirect(url_for("dashboard"))
 
         flash("Incorrect email or password.")
@@ -212,18 +240,22 @@ def dashboard():
     )
 
 
-@app.route("/module/<category>")
+@app.route("/module/<path:category>")
 @login_required
 def module(category):
-    if category not in CATEGORIES:
+    # Supports /module/personal and /module/Personal%20Diary
+    category_key = get_category_key(category)
+
+    if category_key is None:
         return "Module not found", 404
 
+    category_name = CATEGORIES[category_key]
     search = request.args.get("search", "").strip()
-    category_name = CATEGORIES[category]
 
     with get_db() as conn:
         if search:
             wildcard = f"%{search}%"
+
             entries = conn.execute("""
                 SELECT * FROM entries
                 WHERE user_id = %s
@@ -242,15 +274,17 @@ def module(category):
         else:
             entries = conn.execute("""
                 SELECT * FROM entries
-                WHERE user_id = %s AND category = %s
+                WHERE user_id = %s
+                  AND category = %s
                 ORDER BY entry_date DESC, id DESC
             """, (
-                session["user_id"], category_name
+                session["user_id"],
+                category_name
             )).fetchall()
 
     return render_template(
         "module.html",
-        category=category,
+        category=category_key,
         category_name=category_name,
         entries=entries,
         search=search,
@@ -258,10 +292,12 @@ def module(category):
     )
 
 
-@app.route("/add/<category>", methods=["POST"])
+@app.route("/add/<path:category>", methods=["POST"])
 @login_required
 def add(category):
-    if category not in CATEGORIES:
+    category_key = get_category_key(category)
+
+    if category_key is None:
         return "Module not found", 404
 
     title = request.form.get("title", "").strip()
@@ -272,21 +308,27 @@ def add(category):
 
     if not title or not content or not entry_date:
         flash("Please complete the required fields.")
-        return redirect(url_for("module", category=category))
+        return redirect(
+            url_for("module", category=category_key)
+        )
 
     expenses = None
 
-    if category == "expense":
+    if category_key == "expense":
         try:
             expenses = float(expenses_text)
             if expenses < 0:
                 raise ValueError
         except (ValueError, TypeError):
             flash("Please enter a valid non-negative expense.")
-            return redirect(url_for("module", category=category))
+            return redirect(
+                url_for("module", category=category_key)
+            )
 
-    if category != "study":
-        status = "Completed" if status == "Completed" else "Pending"
+    if category_key != "study":
+        status = (
+            "Completed" if status == "Completed" else "Pending"
+        )
 
     try:
         with get_db() as conn:
@@ -300,16 +342,18 @@ def add(category):
                 content,
                 entry_date,
                 session["user_id"],
-                CATEGORIES[category],
+                CATEGORIES[category_key],
                 expenses,
                 status
             ))
     except (ValueError, TypeError):
         flash("Please enter a valid date and entry details.")
-        return redirect(url_for("module", category=category))
+        return redirect(
+            url_for("module", category=category_key)
+        )
 
     flash("Entry saved successfully!")
-    return redirect(url_for("module", category=category))
+    return redirect(url_for("module", category=category_key))
 
 
 @app.route("/edit/<int:entry_id>", methods=["GET", "POST"])
@@ -326,13 +370,10 @@ def edit(entry_id):
         if entry is None:
             return "Entry not found", 404
 
-        category_key = next(
-            (
-                key for key, value in CATEGORIES.items()
-                if value == entry["category"]
-            ),
-            "personal"
-        )
+        category_key = get_category_key(entry["category"])
+
+        if category_key is None:
+            category_key = "personal"
 
         if request.method == "POST":
             title = request.form.get("title", "").strip()
@@ -343,7 +384,9 @@ def edit(entry_id):
 
             if not title or not content or not entry_date:
                 flash("Please complete the required fields.")
-                return redirect(url_for("edit", entry_id=entry_id))
+                return redirect(
+                    url_for("edit", entry_id=entry_id)
+                )
 
             expenses = None
 
@@ -354,23 +397,37 @@ def edit(entry_id):
                         raise ValueError
                 except (ValueError, TypeError):
                     flash("Enter a valid non-negative expense.")
-                    return redirect(url_for("edit", entry_id=entry_id))
+                    return redirect(
+                        url_for("edit", entry_id=entry_id)
+                    )
 
             if category_key != "study":
-                status = "Completed" if status == "Completed" else "Pending"
+                status = (
+                    "Completed" if status == "Completed" else "Pending"
+                )
 
             conn.execute("""
                 UPDATE entries
-                SET title = %s, content = %s, entry_date = %s,
-                    expenses = %s, status = %s
+                SET title = %s,
+                    content = %s,
+                    entry_date = %s,
+                    expenses = %s,
+                    status = %s
                 WHERE id = %s AND user_id = %s
             """, (
-                title, content, entry_date, expenses,
-                status, entry_id, user_id
+                title,
+                content,
+                entry_date,
+                expenses,
+                status,
+                entry_id,
+                user_id
             ))
 
             flash("Entry updated successfully!")
-            return redirect(url_for("module", category=category_key))
+            return redirect(
+                url_for("module", category=category_key)
+            )
 
     return render_template("edit.html", entry=entry)
 
@@ -393,14 +450,14 @@ def delete(entry_id):
             """, (entry_id, user_id))
 
     if entry:
-        category_key = next(
-            (
-                key for key, value in CATEGORIES.items()
-                if value == entry["category"]
-            ),
-            "personal"
+        category_key = get_category_key(entry["category"])
+
+        if category_key is None:
+            category_key = "personal"
+
+        return redirect(
+            url_for("module", category=category_key)
         )
-        return redirect(url_for("module", category=category_key))
 
     return redirect(url_for("dashboard"))
 
@@ -433,7 +490,7 @@ def reports():
     )
 
 
-# Initialize Neon database when the application starts.
+# Initialize the Neon database when the application starts.
 init_db()
 
 
