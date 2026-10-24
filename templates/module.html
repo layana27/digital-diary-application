@@ -456,7 +456,7 @@
             <div class="summary-grid">
                 <div class="summary-card">
                     <div class="label">Total Expenses</div>
-                    <div class="value">₹{{ "%.2f"|format(expense_summary.total) }}</div>
+                    <div class="value">₹{{ "%.2f"|format(expense_summary.total_amount) }}</div>
                 </div>
 
                 <div class="summary-card">
@@ -500,7 +500,7 @@
     <section class="panel">
         <h3>➕ Add New Entry</h3>
 
-        <form method="POST" action="{{ url_for('add_entry', category=category) }}">
+        <form method="POST" action="{{ url_for('add', category=category) }}">
             <div class="form-grid">
 
                 <div class="field full">
