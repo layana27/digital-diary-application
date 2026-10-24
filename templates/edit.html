@@ -87,11 +87,7 @@
                         <option value="{{ option }}" {% if entry.get('mood') == option %}selected{% endif %}>{{ option }}</option>
                         {% endfor %}
                     </select>
-                </div>
-                <div class="field full">
-                    <label for="gratitude">Gratitude Notes</label>
-                    <textarea id="gratitude" name="gratitude">{{ entry.get('gratitude') or '' }}</textarea>
-                </div>
+                
                 {% endif %}
 
                 {% if entry.get('water_intake') is not none or entry.get('sleep_hours') is not none or entry.get('exercise_minutes') is not none or entry.get('period_start') is not none or entry.get('period_end') is not none %}
