@@ -5,129 +5,216 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Entry | Digital Diary</title>
-
     <style>
         * { box-sizing: border-box; }
-
         body {
             margin: 0;
-            padding: 25px 15px;
-            background: #f4f5fb;
-            color: #292744;
+            padding: 24px 14px;
             font-family: Arial, sans-serif;
+            background: #f5f3ff;
+            color: #29243b;
         }
-
-        .container {
-            max-width: 650px;
-            margin: 25px auto;
+        .container { max-width: 800px; margin: auto; }
+        .card {
             background: white;
-            padding: 28px;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px #25254b12;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 18px rgba(55,35,90,.07);
         }
-
-        h2 { color: #5146a5; }
-
-        label {
-            display: block;
-            margin: 15px 0 7px;
-            font-weight: bold;
+        h1 { color: #5b36a8; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
         }
-
-        input, textarea, select {
+        .field { display: flex; flex-direction: column; gap: 7px; }
+        .full { grid-column: 1 / -1; }
+        label { font-weight: bold; font-size: 14px; }
+        input, select, textarea {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #d8d8e5;
+            padding: 11px;
+            border: 1px solid #d9d2e8;
             border-radius: 8px;
             font: inherit;
+            background: white;
         }
-
-        textarea {
-            min-height: 130px;
-            resize: vertical;
-        }
-
-        button, .back {
+        textarea { min-height: 100px; resize: vertical; }
+        button, .btn {
             display: inline-block;
-            margin-top: 18px;
-            padding: 12px 17px;
-            border: 0;
+            border: none;
             border-radius: 8px;
-            background: #5146a5;
+            padding: 11px 16px;
+            background: #6842b8;
             color: white;
+            font-weight: bold;
             text-decoration: none;
             cursor: pointer;
-            font-size: 14px;
         }
-
-        .back {
-            background: #74748a;
-            margin-left: 7px;
-        }
-
-        .message {
-            padding: 12px;
-            margin-bottom: 12px;
-            background: #fff0ef;
-            color: #a22e2e;
-            border-radius: 8px;
+        .secondary { background: #eee8fa; color: #56339b; }
+        .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+        @media (max-width: 600px) {
+            .grid { grid-template-columns: 1fr; }
+            .full { grid-column: auto; }
+            .card { padding: 17px; }
         }
     </style>
 </head>
-
 <body>
 <div class="container">
-    <h2>✏️ Edit Diary Entry</h2>
-    <p>Update your saved information below.</p>
+    <div class="card">
+        <h1>Edit Diary Entry</h1>
+        <p>Update your entry and save the changes.</p>
 
-    {% with messages = get_flashed_messages() %}
-        {% for message in messages %}
-            <div class="message">{{ message }}</div>
-        {% endfor %}
-    {% endwith %}
+        <form method="POST">
+            <div class="grid">
+                <div class="field">
+                    <label for="title">Title *</label>
+                    <input id="title" name="title" required
+                           value="{{ entry.get('title') or '' }}">
+                </div>
 
-    <form method="POST">
-        <label for="title">Title</label>
-        <input id="title" type="text" name="title"
-               value="{{ entry['title'] }}" required>
+                <div class="field">
+                    <label for="entry_date">Date *</label>
+                    <input id="entry_date" type="date" name="entry_date" required
+                           value="{{ entry['entry_date'].strftime('%Y-%m-%d') if entry.get('entry_date') else '' }}">
+                </div>
 
-        <label for="entry_date">Date</label>
-        <input id="entry_date" type="date" name="entry_date"
-               value="{{ entry['entry_date'] }}" required>
+                {% if entry.get('mood') is not none or entry.get('gratitude') is not none %}
+                <div class="field">
+                    <label for="mood">Mood</label>
+                    <select id="mood" name="mood">
+                        {% for option in ['Happy','Calm','Excited','Grateful','Sad','Stressed','Angry','Tired'] %}
+                        <option value="{{ option }}" {% if entry.get('mood') == option %}selected{% endif %}>{{ option }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field full">
+                    <label for="gratitude">Gratitude Notes</label>
+                    <textarea id="gratitude" name="gratitude">{{ entry.get('gratitude') or '' }}</textarea>
+                </div>
+                {% endif %}
 
-        <label for="destination">Destination (for Travel Diary)</label>
-        <input id="destination" type="text" name="destination"
-               value="{{ entry['destination'] or '' }}"
-               placeholder="Travel destination, if applicable">
+                {% if entry.get('water_intake') is not none or entry.get('sleep_hours') is not none or entry.get('exercise_minutes') is not none or entry.get('period_start') is not none or entry.get('period_end') is not none %}
+                <div class="field">
+                    <label for="water_intake">Water Intake (litres)</label>
+                    <input id="water_intake" type="number" min="0" max="20" step="0.1"
+                           name="water_intake" value="{{ entry.get('water_intake') if entry.get('water_intake') is not none else '' }}">
+                </div>
+                <div class="field">
+                    <label for="sleep_hours">Sleep (hours)</label>
+                    <input id="sleep_hours" type="number" min="0" max="24" step="0.5"
+                           name="sleep_hours" value="{{ entry.get('sleep_hours') if entry.get('sleep_hours') is not none else '' }}">
+                </div>
+                <div class="field">
+                    <label for="exercise_minutes">Exercise (minutes)</label>
+                    <input id="exercise_minutes" type="number" min="0" step="1"
+                           name="exercise_minutes" value="{{ entry.get('exercise_minutes') if entry.get('exercise_minutes') is not none else '' }}">
+                </div>
+                <div class="field">
+                    <label for="meditation_minutes">Yoga / Meditation (minutes)</label>
+                    <input id="meditation_minutes" type="number" min="0" step="1"
+                           name="meditation_minutes" value="{{ entry.get('meditation_minutes') if entry.get('meditation_minutes') is not none else '' }}">
+                </div>
+                <div class="field full">
+                    <label for="meals">Meals and Healthy Habits</label>
+                    <textarea id="meals" name="meals">{{ entry.get('meals') or '' }}</textarea>
+                </div>
+                <div class="field">
+                    <label for="period_start">Period Start Date</label>
+                    <input id="period_start" type="date" name="period_start"
+                           value="{{ entry['period_start'].strftime('%Y-%m-%d') if entry.get('period_start') else '' }}">
+                </div>
+                <div class="field">
+                    <label for="period_end">Period End Date</label>
+                    <input id="period_end" type="date" name="period_end"
+                           value="{{ entry['period_end'].strftime('%Y-%m-%d') if entry.get('period_end') else '' }}">
+                </div>
+                <div class="field">
+                    <label for="flow_level">Flow Level</label>
+                    <select id="flow_level" name="flow_level">
+                        <option value="">Select flow</option>
+                        {% for option in ['Light','Medium','Heavy'] %}
+                        <option value="{{ option }}" {% if entry.get('flow_level') == option %}selected{% endif %}>{{ option }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="symptoms">Symptoms</label>
+                    <input id="symptoms" name="symptoms" value="{{ entry.get('symptoms') or '' }}">
+                </div>
+                {% endif %}
 
-        <label for="expenses">Expense Amount (₹), if applicable</label>
-        <input id="expenses" type="number" name="expenses"
-               min="0" step="0.01"
-               value="{{ entry['expenses'] if entry['expenses'] is not none else '' }}"
-               placeholder="Enter amount">
+                {% if entry.get('subject') is not none or entry.get('deadline') is not none or entry.get('planned_hours') is not none %}
+                <div class="field">
+                    <label for="subject">Subject</label>
+                    <input id="subject" name="subject" value="{{ entry.get('subject') or '' }}">
+                </div>
+                <div class="field">
+                    <label for="deadline">Deadline</label>
+                    <input id="deadline" type="date" name="deadline"
+                           value="{{ entry['deadline'].strftime('%Y-%m-%d') if entry.get('deadline') else '' }}">
+                </div>
+                <div class="field">
+                    <label for="priority">Priority</label>
+                    <select id="priority" name="priority">
+                        {% for option in ['Low','Medium','High'] %}
+                        <option value="{{ option }}" {% if (entry.get('priority') or 'Medium') == option %}selected{% endif %}>{{ option }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="status">Task Status</label>
+                    <select id="status" name="status">
+                        {% for option in ['Pending','In Progress','Completed'] %}
+                        <option value="{{ option }}" {% if (entry.get('status') or 'Pending') == option %}selected{% endif %}>{{ option }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="planned_hours">Planned Hours</label>
+                    <input id="planned_hours" type="number" min="0" step="0.25"
+                           name="planned_hours" value="{{ entry.get('planned_hours') if entry.get('planned_hours') is not none else '' }}">
+                </div>
+                <div class="field">
+                    <label for="actual_hours">Actual Hours</label>
+                    <input id="actual_hours" type="number" min="0" step="0.25"
+                           name="actual_hours" value="{{ entry.get('actual_hours') if entry.get('actual_hours') is not none else '' }}">
+                </div>
+                {% endif %}
 
-        <label for="status">Status</label>
-        <select id="status" name="status">
-            <option value="Pending"
-                {% if entry['status'] == 'Pending' %}selected{% endif %}>
-                Pending
-            </option>
-            <option value="In Progress"
-                {% if entry['status'] == 'In Progress' %}selected{% endif %}>
-                In Progress
-            </option>
-            <option value="Completed"
-                {% if entry['status'] == 'Completed' %}selected{% endif %}>
-                Completed
-            </option>
-        </select>
+                {% if entry.get('expense_category') is not none or entry.get('expenses') is not none %}
+                <div class="field">
+                    <label for="expense_category">Expense Category</label>
+                    <select id="expense_category" name="expense_category">
+                        {% for option in ['House Rent','Food & Groceries','Transportation','Electricity/Phone/Internet','Health & Personal Care','Shopping & Entertainment','Other Expenses','Savings'] %}
+                        <option value="{{ option }}" {% if entry.get('expense_category') == option %}selected{% endif %}>{{ option }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="expenses">Amount (₹)</label>
+                    <input id="expenses" type="number" min="0" step="0.01"
+                           name="expenses" value="{{ entry.get('expenses') if entry.get('expenses') is not none else '' }}">
+                </div>
+                <div class="field">
+                    <label for="monthly_budget">Monthly Budget (₹)</label>
+                    <input id="monthly_budget" type="number" min="0" step="0.01"
+                           name="monthly_budget" value="{{ entry.get('monthly_budget') if entry.get('monthly_budget') is not none else '' }}">
+                </div>
+                {% endif %}
 
-        <label for="content">Description / Thoughts</label>
-        <textarea id="content" name="content" required>{{ entry['content'] }}</textarea>
+                <div class="field full">
+                    <label for="content">Description / Notes *</label>
+                    <textarea id="content" name="content" required>{{ entry.get('content') or '' }}</textarea>
+                </div>
+            </div>
 
-        <button type="submit">Save Changes</button>
-        <a class="back" href="{{ url_for('dashboard') }}">Cancel</a>
-    </form>
+            <div class="actions">
+                <button type="submit">Save Changes</button>
+                <a class="btn secondary" href="{{ url_for('dashboard') }}">Cancel</a>
+            </div>
+        </form>
+    </div>
 </div>
 </body>
 </html>

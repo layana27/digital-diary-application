@@ -4,116 +4,198 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Diary Reports</title>
-
+    <title>Reports | Digital Diary</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { box-sizing: border-box; }
-
         body {
             margin: 0;
+            padding: 24px 14px;
             font-family: Arial, sans-serif;
-            background: #f4f5fb;
-            color: #292744;
+            background: #f5f3ff;
+            color: #29243b;
         }
-
-        header {
-            background: #5146a5;
-            color: white;
-            padding: 24px 7%;
+        .container { max-width: 1100px; margin: auto; }
+        .topbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 12px;
             flex-wrap: wrap;
-        }
-
-        header h2 { margin: 0; }
-
-        header a {
-            color: white;
-            text-decoration: none;
-            border: 1px solid white;
-            padding: 10px 14px;
-            border-radius: 8px;
-        }
-
-        main {
-            max-width: 900px;
-            margin: 35px auto;
-            padding: 0 18px;
-        }
-
-        .panel {
-            background: white;
-            padding: 25px;
-            margin-bottom: 22px;
-            border-radius: 14px;
-            box-shadow: 0 4px 18px #25254b10;
-        }
-
-        h3 { color: #5146a5; }
-
-        .total {
-            font-size: 32px;
-            color: #16856b;
-            font-weight: bold;
-        }
-
-        .item {
-            padding: 13px 0;
-            border-bottom: 1px solid #ecebf5;
-            display: flex;
-            justify-content: space-between;
             gap: 12px;
+            margin-bottom: 22px;
         }
-
-        .item:last-child { border-bottom: none; }
-
-        .muted {
-            color: #73738a;
-            line-height: 1.6;
+        h1, h2 { color: #5b36a8; }
+        .muted { color: #716b80; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px;
         }
-
-        @media (max-width: 500px) {
-            .item { flex-direction: column; }
+        .card {
+            background: white;
+            padding: 22px;
+            border-radius: 16px;
+            box-shadow: 0 4px 18px rgba(55,35,90,.07);
+            margin-bottom: 20px;
+            min-width: 0;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        .stat {
+            background: white;
+            border-radius: 14px;
+            padding: 18px;
+            box-shadow: 0 4px 18px rgba(55,35,90,.06);
+        }
+        .stat strong {
+            display: block;
+            font-size: 25px;
+            color: #6842b8;
+            margin-top: 8px;
+            overflow-wrap: anywhere;
+        }
+        .btn {
+            display: inline-block;
+            padding: 11px 16px;
+            border-radius: 8px;
+            background: #6842b8;
+            color: white;
+            font-weight: bold;
+            text-decoration: none;
+        }
+        .chart-wrap { position: relative; height: 300px; }
+        .empty { color: #716b80; font-size: 14px; }
+        @media (max-width: 700px) {
+            .grid { grid-template-columns: 1fr; }
+            .stats { grid-template-columns: 1fr; }
+            .chart-wrap { height: 250px; }
+            .card { padding: 16px; }
         }
     </style>
 </head>
-
 <body>
+<div class="container">
 
-<header>
-    <h2>📊 Diary Reports</h2>
-    <a href="{{ url_for('dashboard') }}">← Dashboard</a>
-</header>
+    <div class="topbar">
+        <div>
+            <h1>Diary Reports &amp; Analytics</h1>
+            <p class="muted">Review your expenses, study progress and diary activity.</p>
+        </div>
+        <a class="btn" href="{{ url_for('dashboard') }}">← Dashboard</a>
+    </div>
 
-<main>
-    <section class="panel">
-        <h3>Expense Overview</h3>
-        <p class="muted">
-            Total recorded expenses from your Expense Diary and Travel Diary.
-        </p>
-        <div class="total">₹{{ "%.2f"|format(expense_total) }}</div>
-    </section>
+    <div class="stats">
+        <div class="stat">
+            <span>Total Expenses</span>
+            <strong>₹{{ "%.2f"|format(expense_total|default(0, true)|float) }}</strong>
+        </div>
 
-    <section class="panel">
-        <h3>Entries by Category</h3>
+        <div class="stat">
+            <span>Actual Study Hours</span>
+            <strong>{{ "%.2f"|format(study_actual_hours|default(0, true)|float) }}</strong>
+        </div>
 
-        {% if totals %}
-            {% for item in totals %}
-                <div class="item">
-                    <strong>{{ item['category'] or 'Personal Diary' }}</strong>
-                    <span>{{ item['total'] }} entries</span>
+        <div class="stat">
+            <span>Tasks Completed</span>
+            <strong>{{ completed_tasks|default(0, true) }} / {{ total_tasks|default(0, true) }}</strong>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <h2>Monthly Expense Report</h2>
+            <p class="muted">Expense totals grouped by month.</p>
+            {% if monthly_expenses %}
+                <div class="chart-wrap">
+                    <canvas id="expenseChart"></canvas>
                 </div>
-            {% endfor %}
-        {% else %}
-            <p class="muted">
-                No entries recorded yet. Add entries in your diary modules
-                to see your summary here.
-            </p>
-        {% endif %}
-    </section>
-</main>
+            {% else %}
+                <p class="empty">No expense data available yet. Add entries in Expense Diary.</p>
+            {% endif %}
+        </div>
 
+        <div class="card">
+            <h2>Subject-wise Study Hours</h2>
+            <p class="muted">Actual study time recorded for each subject.</p>
+            {% if subject_hours %}
+                <div class="chart-wrap">
+                    <canvas id="studyChart"></canvas>
+                </div>
+            {% else %}
+                <p class="empty">No study data available yet. Add entries in Study Planner.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Study Progress</h2>
+        {% set task_count = total_tasks|default(0, true)|int %}
+        {% set completed_count = completed_tasks|default(0, true)|int %}
+        {% set progress = ((completed_count * 100 / task_count)|round|int) if task_count > 0 else 0 %}
+
+        <p><strong>{{ progress }}%</strong> of study tasks completed</p>
+        <div style="background:#eee8fa;border-radius:20px;height:16px;overflow:hidden;">
+            <div style="background:#6842b8;width:{{ progress }}%;height:16px;border-radius:20px;"></div>
+        </div>
+        <p class="muted">{{ completed_count }} completed out of {{ task_count }} tasks.</p>
+    </div>
+
+    <div class="card">
+        <h2>Planned vs Actual Study Hours</h2>
+        <p>Planned hours: <strong>{{ "%.2f"|format(study_planned_hours|default(0, true)|float) }}</strong></p>
+        <p>Actual hours: <strong>{{ "%.2f"|format(study_actual_hours|default(0, true)|float) }}</strong></p>
+    </div>
+
+</div>
+
+<script>
+    const monthlyExpenses = {{ monthly_expenses|default([], true)|tojson }};
+    const subjectHours = {{ subject_hours|default([], true)|tojson }};
+
+    if (monthlyExpenses.length && document.getElementById('expenseChart')) {
+        new Chart(document.getElementById('expenseChart'), {
+            type: 'bar',
+            data: {
+                labels: monthlyExpenses.map(item => item.month),
+                datasets: [{
+                    label: 'Expenses (₹)',
+                    data: monthlyExpenses.map(item => Number(item.total)),
+                    backgroundColor: '#8b6bd6',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+
+    if (subjectHours.length && document.getElementById('studyChart')) {
+        new Chart(document.getElementById('studyChart'), {
+            type: 'bar',
+            data: {
+                labels: subjectHours.map(item => item.subject),
+                datasets: [{
+                    label: 'Study Hours',
+                    data: subjectHours.map(item => Number(item.hours)),
+                    backgroundColor: '#53a99a',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+</script>
 </body>
 </html>
