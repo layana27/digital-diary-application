@@ -254,7 +254,7 @@
             }
         } %}
 
-        {% for key, name in categories.items() %}
+        {% for key, name in (categories | default({})).items() %}
             <article class="module-card">
                 <div class="module-icon">
                     {{ module_details.get(key, {}).get('icon', '📝') }}
