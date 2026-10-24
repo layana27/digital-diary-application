@@ -590,7 +590,7 @@ header a {
                         {{ entry.entry_date }}
 
                         {% if entry.amount is not none %}
-                            · ₹{{ '%.2f'|format(entry.amount|float) }}
+                    ₹{{ '%.2f'|format(entry.amount|default(0, true)|float) }}
                         {% endif %}
 
                         {% if entry.expense_category %}
