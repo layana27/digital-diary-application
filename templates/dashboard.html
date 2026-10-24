@@ -4,24 +4,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Diary Dashboard</title>
+    <title>Dashboard | Digital Diary Application</title>
 
     <style>
         * {
             box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            margin: 0;
             font-family: Arial, sans-serif;
-            background: #f4f5fb;
-            color: #272541;
+            background: #f4f6fb;
+            color: #253047;
         }
 
         header {
-            background: #5146a5;
+            background: #243b67;
             color: white;
-            padding: 24px 7%;
+            padding: 22px 7%;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -30,124 +31,164 @@
         }
 
         header h1 {
-            margin: 0 0 7px;
-            font-size: 27px;
+            font-size: 24px;
         }
 
-        header p {
-            margin: 0;
-            opacity: 0.9;
-        }
-
-        .logout {
-            background: white;
-            color: #5146a5;
-            border: 0;
+        header a {
+            color: white;
+            text-decoration: none;
+            background: #405b91;
+            padding: 10px 16px;
             border-radius: 8px;
-            padding: 11px 17px;
-            cursor: pointer;
-            font-weight: bold;
         }
 
-        main {
+        .container {
             max-width: 1150px;
             margin: 35px auto;
             padding: 0 20px;
         }
 
-        .intro {
-            margin-bottom: 25px;
-        }
-
-        .intro h2 {
-            margin-bottom: 8px;
-        }
-
-        .intro p,
-        .card p {
-            color: #73738a;
-        }
-
-        .stats {
-            background: white;
-            padding: 22px;
-            border-radius: 14px;
+        .welcome {
             margin-bottom: 28px;
-            box-shadow: 0 4px 18px #25254b10;
         }
 
-        .stats strong {
-            display: block;
-            font-size: 30px;
-            color: #5146a5;
-            margin-top: 8px;
+        .welcome h2 {
+            font-size: 28px;
+            margin-bottom: 9px;
         }
 
-        .grid {
+        .welcome p {
+            color: #68758a;
+            line-height: 1.6;
+        }
+
+        .messages {
+            margin-bottom: 20px;
+        }
+
+        .message {
+            padding: 13px 16px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            background: #e5f6e9;
+            color: #216536;
+        }
+
+        .message.error {
+            background: #fde8e8;
+            color: #a32626;
+        }
+
+        .section-title {
+            margin-bottom: 18px;
+            font-size: 21px;
+        }
+
+        .modules {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 20px;
         }
 
-        .card {
+        .module-card {
             background: white;
+            border-radius: 14px;
             padding: 24px;
-            border-radius: 15px;
-            box-shadow: 0 4px 18px #25254b10;
-            border: 1px solid #ecebf5;
-            transition: transform 0.2s;
+            border: 1px solid #e6eaf2;
+            box-shadow: 0 5px 18px rgba(35, 53, 90, 0.06);
+            display: flex;
+            flex-direction: column;
+            min-height: 205px;
         }
 
-        .card:hover {
-            transform: translateY(-4px);
+        .module-icon {
+            font-size: 32px;
+            margin-bottom: 14px;
         }
 
-        .emoji {
-            font-size: 34px;
+        .module-card h3 {
+            font-size: 19px;
+            margin-bottom: 9px;
         }
 
-        .card h3 {
-            margin: 15px 0 9px;
-        }
-
-        .card p {
+        .module-card p {
+            font-size: 14px;
+            color: #748096;
             line-height: 1.6;
-            min-height: 48px;
+            margin-bottom: 18px;
         }
 
-        .open {
+        .count {
+            font-size: 13px;
+            color: #53627b;
+            margin-top: auto;
+            margin-bottom: 15px;
+        }
+
+        .open-link {
             display: inline-block;
-            background: #5146a5;
-            color: white;
-            padding: 11px 16px;
-            border-radius: 8px;
-            text-decoration: none;
-            margin-top: 8px;
-        }
-
-        .open:hover {
-            background: #403587;
-        }
-
-        .report {
-            margin-top: 28px;
             text-align: center;
+            background: #3459a1;
+            color: white;
+            text-decoration: none;
+            padding: 11px 15px;
+            border-radius: 8px;
+            font-weight: bold;
         }
 
-        .report a {
-            color: #5146a5;
-            font-weight: bold;
+        .open-link:hover {
+            background: #243b67;
+        }
+
+        .bottom-links {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+
+        .bottom-links a {
+            text-decoration: none;
+            color: #3459a1;
+            background: white;
+            border: 1px solid #dce3ef;
+            padding: 12px 17px;
+            border-radius: 8px;
         }
 
         footer {
             text-align: center;
-            color: #85859a;
-            padding: 25px;
+            color: #8791a3;
+            font-size: 13px;
+            padding: 35px 15px;
+        }
+
+        @media (max-width: 800px) {
+            .modules {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
         }
 
         @media (max-width: 520px) {
-            .grid {
+            header {
+                padding: 18px 5%;
+            }
+
+            header h1 {
+                font-size: 20px;
+            }
+
+            .container {
+                margin-top: 25px;
+                padding: 0 15px;
+            }
+
+            .modules {
                 grid-template-columns: 1fr;
+            }
+
+            .welcome h2 {
+                font-size: 24px;
             }
         }
     </style>
@@ -156,96 +197,99 @@
 <body>
 
 <header>
-    <div>
-        <h1>📔 Digital Diary</h1>
-        <p>Your personal space to organize everyday life</p>
-    </div>
-
-    <form method="POST" action="{{ url_for('logout') }}">
-        <button class="logout" type="submit">Logout</button>
-    </form>
+    <h1>📔 Digital Diary</h1>
+    <a href="{{ url_for('logout') }}">Logout</a>
 </header>
 
-<main>
-    <section class="intro">
-        <h2>Hello, {{ name }}! 👋</h2>
-        <p>Keep your memories, plans, and daily records in one place.</p>
+<main class="container">
+
+    <section class="welcome">
+        <h2>Welcome, {{ user_name | default('User') }}! 👋</h2>
+        <p>
+            Your personal space to record memories, plan your studies,
+            manage expenses, track health, and organize everyday life.
+        </p>
     </section>
 
-    <section class="stats">
-        Total saved entries
-        <strong>{{ total_entries }}</strong>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="messages">
+                {% for category, message in messages %}
+                    <div class="message {% if category == 'error' %}error{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <h2 class="section-title">Your Diary Modules</h2>
+
+    <section class="modules">
+
+        {% set module_details = {
+            'personal': {
+                'icon': '📖',
+                'description': 'Write personal thoughts, memories, experiences, and important moments.'
+            },
+            'travel': {
+                'icon': '✈️',
+                'description': 'Record destinations, travel experiences, itineraries, and trip memories.'
+            },
+            'study': {
+                'icon': '📚',
+                'description': 'Organize subjects, study plans, learning goals, and completion status.'
+            },
+            'expense': {
+                'icon': '💰',
+                'description': 'Record expenses, categorize spending, and review your monthly budget.'
+            },
+            'health': {
+                'icon': '❤️',
+                'description': 'Track water intake, exercise, sleep, meditation, and health notes.'
+            },
+            'daily': {
+                'icon': '🗓️',
+                'description': 'Keep daily records, tasks, activities, and everyday experiences.'
+            }
+        } %}
+
+        {% for key, name in categories.items() %}
+            <article class="module-card">
+                <div class="module-icon">
+                    {{ module_details.get(key, {}).get('icon', '📝') }}
+                </div>
+
+                <h3>{{ name }}</h3>
+
+                <p>
+                    {{ module_details.get(key, {}).get(
+                        'description',
+                        'Create and manage your diary entries.'
+                    ) }}
+                </p>
+
+                <div class="count">
+                    Entries saved: {{ counts.get(key, 0) }}
+                </div>
+
+                <a class="open-link"
+                   href="{{ url_for('module', category=key) }}">
+                    Open Module →
+                </a>
+            </article>
+        {% endfor %}
+
     </section>
 
-    <section class="grid">
-
-        <!-- Personal Diary -->
-        <article class="card">
-            <div class="emoji">📔</div>
-            <h3>Personal Diary</h3>
-            <p>
-                Record your thoughts, feelings, experiences,
-                and memorable moments.
-            </p>
-            <a class="open"
-               href="{{ url_for('module', category='personal') }}">
-                Open Diary →
-            </a>
-        </article>
-
-        <!-- Health Diary -->
-        <article class="card">
-            <div class="emoji">🌿</div>
-            <h3>Health Diary</h3>
-            <p>
-                Maintain wellness notes, exercise records,
-                sleep details, and healthy habits.
-            </p>
-            <a class="open"
-               href="{{ url_for('module', category='health') }}">
-                Track Health →
-            </a>
-        </article>
-
-        <!-- Expense Diary -->
-        <article class="card">
-            <div class="emoji">💰</div>
-            <h3>Expense Diary</h3>
-            <p>
-                Record daily spending, expense categories,
-                amounts, and payment details.
-            </p>
-            <a class="open"
-               href="{{ url_for('module', category='expense') }}">
-                Track Expenses →
-            </a>
-        </article>
-
-        <!-- Study Planner -->
-        <article class="card">
-            <div class="emoji">📚</div>
-            <h3>Study Planner</h3>
-            <p>
-                Organize study tasks, subjects, deadlines,
-                and completed activities.
-            </p>
-            <a class="open"
-               href="{{ url_for('module', category='study') }}">
-                Plan Studies →
-            </a>
-        </article>
-
-    </section>
-
-    <div class="report">
-        <a href="{{ url_for('reports') }}">
-            📊 View Diary Summary &amp; Expense Report
-        </a>
+    <div class="bottom-links">
+        <a href="{{ url_for('reports') }}">📊 View Reports</a>
     </div>
+
 </main>
 
 <footer>
-    Digital Diary Application · Organize your day, preserve your memories.
+    Digital Diary Application · Keep your memories organized
 </footer>
 
 </body>

@@ -2,574 +2,794 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{{ category_name }} | Digital Diary</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ category_name }} | Digital Diary</title>
 
-<style>
-:root {
-    --purple:#6654d9;
-    --deep:#4736ae;
-    --bg:#f5f6fc;
-    --ink:#25263a;
-    --muted:#777b91;
-    --line:#e7e8f1;
-    --white:#fff;
-}
-* { box-sizing:border-box; }
-body {
-    margin:0;
-    background:var(--bg);
-    font-family:Arial,sans-serif;
-    color:var(--ink);
-}
-header {
-    background:linear-gradient(120deg,var(--purple),var(--deep));
-    color:white;
-    padding:22px max(5%,calc((100% - 1200px)/2));
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:16px;
-    flex-wrap:wrap;
-}
-header h1 { margin:0; font-size:25px; }
-header a {
-    color:white;
-    text-decoration:none;
-    margin-left:15px;
-    font-weight:bold;
-}
-.wrap { max-width:1200px; margin:25px auto; padding:0 18px; }
-.topline {
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-    flex-wrap:wrap;
-}
-.back { color:var(--deep); text-decoration:none; font-weight:bold; }
-.flash {
-    padding:12px 15px;
-    border-radius:10px;
-    margin:12px 0;
-    background:#e8f8ee;
-    color:#17653a;
-}
-.flash.error { background:#ffeded; color:#9b2727; }
-.grid {
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-    gap:14px;
-    margin:18px 0;
-}
-.card {
-    background:white;
-    border:1px solid var(--line);
-    border-radius:15px;
-    padding:18px;
-    box-shadow:0 5px 18px #2a285208;
-    min-width:0;
-}
-.card h3 { font-size:14px; color:var(--muted); margin:0 0 10px; }
-.big { font-size:26px; font-weight:bold; overflow-wrap:anywhere; }
-.section-title { font-size:19px; margin:0 0 16px; }
-.layout {
-    display:grid;
-    grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);
-    gap:18px;
-    align-items:start;
-}
-.field { margin-bottom:13px; }
-.field label {
-    display:block;
-    font-size:13px;
-    font-weight:bold;
-    margin-bottom:6px;
-    color:#4c4e64;
-}
-.field input,.field textarea,.field select,.search input {
-    width:100%;
-    padding:11px;
-    border:1px solid #dfe1ed;
-    border-radius:9px;
-    background:#fff;
-    font:inherit;
-}
-.field textarea { min-height:90px; resize:vertical; }
-.two { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-.btn {
-    border:0;
-    background:var(--purple);
-    color:white;
-    padding:11px 16px;
-    border-radius:9px;
-    font-weight:bold;
-    cursor:pointer;
-    text-decoration:none;
-    display:inline-block;
-}
-.btn:hover { background:var(--deep); }
-.btn.danger { background:#d94c61; }
-.btn.light { background:#efedff; color:var(--deep); }
-.entry {
-    padding:15px 0;
-    border-bottom:1px solid var(--line);
-    overflow-wrap:anywhere;
-}
-.entry:last-child { border-bottom:0; }
-.entry h3 { margin:0 0 6px; }
-.entry p { white-space:pre-wrap; overflow-wrap:anywhere; }
-.meta { font-size:12px; color:var(--muted); }
-.entry-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
-.entry-actions form { margin:0; }
-.search { display:flex; gap:8px; margin-bottom:15px; flex-wrap:wrap; }
-.search input { flex:1; min-width:100px; }
-.chartbox { height:240px; position:relative; }
-.pill {
-    display:inline-block;
-    background:#efedff;
-    color:var(--deep);
-    padding:5px 9px;
-    border-radius:20px;
-    font-size:12px;
-    margin:3px 3px 3px 0;
-}
-@media(max-width:800px) {
-    .layout { grid-template-columns:1fr; }
-}
-@media(max-width:480px) {
-    .two { grid-template-columns:1fr; }
-    .wrap { padding:0 12px; }
-    .card { padding:14px; }
-    header { padding:18px 14px; }
-    header h1 { font-size:21px; }
-    header a { margin-left:8px; }
-}
-</style>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6fb;
+            color: #253047;
+            line-height: 1.6;
+        }
+
+        header {
+            background: #243b67;
+            color: white;
+            padding: 20px 6%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        header h1 {
+            font-size: 23px;
+        }
+
+        header a {
+            color: white;
+            text-decoration: none;
+            background: #405b91;
+            padding: 9px 14px;
+            border-radius: 7px;
+        }
+
+        main {
+            max-width: 1100px;
+            margin: 30px auto;
+            padding: 0 18px;
+        }
+
+        .intro {
+            margin-bottom: 24px;
+        }
+
+        .intro h2 {
+            font-size: 27px;
+            margin-bottom: 5px;
+        }
+
+        .muted {
+            color: #758198;
+            font-size: 14px;
+        }
+
+        .panel {
+            background: white;
+            border: 1px solid #e5eaf2;
+            border-radius: 13px;
+            padding: 23px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 15px rgba(35, 53, 90, 0.04);
+        }
+
+        .panel h3 {
+            margin-bottom: 17px;
+            font-size: 20px;
+        }
+
+        .messages {
+            margin-bottom: 20px;
+        }
+
+        .message {
+            background: #e3f6e8;
+            color: #216536;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+        }
+
+        .message.error {
+            background: #fde8e8;
+            color: #a32626;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .full {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-size: 14px;
+            font-weight: bold;
+            color: #39465c;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 11px 12px;
+            border: 1px solid #d6deea;
+            border-radius: 7px;
+            background: white;
+            font: inherit;
+            font-size: 14px;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: 2px solid #cbdafa;
+            border-color: #3459a1;
+        }
+
+        button, .button {
+            border: none;
+            border-radius: 7px;
+            padding: 11px 16px;
+            font: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .primary {
+            background: #3459a1;
+            color: white;
+        }
+
+        .primary:hover {
+            background: #243b67;
+        }
+
+        .secondary {
+            background: #e9eef7;
+            color: #253047;
+        }
+
+        .danger {
+            background: #fde8e8;
+            color: #a32626;
+        }
+
+        .actions {
+            display: flex;
+            gap: 9px;
+            flex-wrap: wrap;
+            margin-top: 17px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 13px;
+            margin-bottom: 20px;
+        }
+
+        .summary-card {
+            background: #f5f7fc;
+            border: 1px solid #e4eaf5;
+            border-radius: 10px;
+            padding: 17px;
+        }
+
+        .summary-card .label {
+            color: #758198;
+            font-size: 13px;
+        }
+
+        .summary-card .value {
+            font-size: 23px;
+            font-weight: bold;
+            margin-top: 5px;
+            overflow-wrap: anywhere;
+        }
+
+        .entry {
+            border: 1px solid #e4eaf2;
+            border-radius: 10px;
+            padding: 18px;
+            margin-bottom: 13px;
+            background: #fff;
+        }
+
+        .entry h4 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .entry-date {
+            color: #7b879b;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+
+        .entry-content {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .entry-details {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+
+        .tag {
+            display: inline-block;
+            background: #edf2fc;
+            color: #3459a1;
+            padding: 5px 9px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .entry-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .entry-actions .button,
+        .entry-actions button {
+            font-size: 13px;
+            padding: 8px 12px;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .search-form input {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .empty {
+            text-align: center;
+            color: #758198;
+            padding: 25px 10px;
+        }
+
+        .chart-row {
+            margin: 14px 0;
+        }
+
+        .chart-label {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+
+        .bar-bg {
+            height: 9px;
+            background: #e8edf6;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .bar {
+            height: 100%;
+            background: #5478c4;
+            border-radius: 20px;
+        }
+
+        .budget-form {
+            margin-bottom: 18px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 25px 15px;
+            color: #8791a3;
+            font-size: 13px;
+        }
+
+        @media (max-width: 650px) {
+            .form-grid, .summary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .full {
+                grid-column: auto;
+            }
+
+            .search-form {
+                flex-wrap: wrap;
+            }
+
+            header h1 {
+                font-size: 19px;
+            }
+
+            .panel {
+                padding: 17px;
+            }
+
+            .intro h2 {
+                font-size: 23px;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
-{% set health_summary = health_summary|default({
-    'average_water':0,
-    'exercise_total':0,
-    'average_sleep':0,
-    'meditation_total':0,
-    'period_records':0,
-    'activity_records':0,
-    'activities':[],
-    'water_days':[]
-}, true) %}
-
-{% set expense_summary = expense_summary|default({
-    'total':0,
-    'budget':0,
-    'remaining':0,
-    'categories':[]
-}, true) %}
-
-{% set selected_month = selected_month|default('', true) %}
-{% set search = search|default('', true) %}
-{% set today = today|default('', true) %}
-
 <header>
-    <h1>📔 {{ category_name }}</h1>
-    <nav>
-        <a href="{{ url_for('dashboard') }}">Dashboard</a>
+    <h1>📔 Digital Diary</h1>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <a href="{{ url_for('dashboard') }}">← Dashboard</a>
         <a href="{{ url_for('logout') }}">Logout</a>
-    </nav>
+    </div>
 </header>
 
-<div class="wrap">
-
-    <div class="topline">
-        <div>
-            <a class="back" href="{{ url_for('dashboard') }}">← Back to Dashboard</a>
-            <p class="meta">Keep your daily records organized in one place.</p>
-        </div>
-    </div>
+<main>
+    <section class="intro">
+        <h2>{{ category_name }}</h2>
+        <p class="muted">
+            Create, save, search, and manage your diary entries.
+        </p>
+    </section>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
-        {% for kind, message in messages %}
-            <div class="flash {{ 'error' if kind == 'error' else '' }}">
-                {{ message }}
+        {% if messages %}
+            <div class="messages">
+                {% for message_type, message in messages %}
+                    <div class="message {% if message_type == 'error' %}error{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
             </div>
-        {% endfor %}
+        {% endif %}
     {% endwith %}
 
-    {% if category == 'expense' %}
-    <div class="grid">
-        <div class="card">
-            <h3>Expenses this month</h3>
-            <div class="big">₹{{ '%.2f'|format(expense_summary.total|default(0)|float) }}</div>
-        </div>
-        <div class="card">
-            <h3>Monthly budget</h3>
-            <div class="big">₹{{ '%.2f'|format(expense_summary.budget|default(0)|float) }}</div>
-        </div>
-        <div class="card">
-            <h3>Budget remaining</h3>
-            <div class="big">₹{{ '%.2f'|format(expense_summary.remaining|default(0)|float) }}</div>
-        </div>
-    </div>
-
-    <div class="card" style="margin-bottom:18px">
-        <h2 class="section-title">Monthly Expense Summary</h2>
-        <form method="get" class="search">
-            <input type="month" name="month" value="{{ selected_month }}">
-            <button class="btn" type="submit">View month</button>
-        </form>
-        <div class="chartbox">
-            <canvas id="expenseChart"></canvas>
-        </div>
-    </div>
-    {% endif %}
-
     {% if category == 'health' %}
-    <div class="grid">
-        <div class="card">
-            <h3>Average water / day</h3>
-            <div class="big">{{ '%.1f'|format(health_summary.average_water|default(0)|float) }} glasses</div>
-        </div>
-        <div class="card">
-            <h3>Total exercise</h3>
-            <div class="big">{{ health_summary.exercise_total|default(0)|int }} min</div>
-        </div>
-        <div class="card">
-            <h3>Average sleep</h3>
-            <div class="big">{{ '%.1f'|format(health_summary.average_sleep|default(0)|float) }} hrs</div>
-        </div>
-        <div class="card">
-            <h3>Total meditation</h3>
-            <div class="big">{{ health_summary.meditation_total|default(0)|int }} min</div>
-        </div>
-        <div class="card">
-            <h3>Period records</h3>
-            <div class="big">{{ health_summary.period_records|default(0)|int }}</div>
-        </div>
-        <div class="card">
-            <h3>Activity records</h3>
-            <div class="big">{{ health_summary.activity_records|default(0)|int }}</div>
-        </div>
-    </div>
+        <section class="panel">
+            <h3>❤️ Health Summary</h3>
 
-    <div class="layout" style="margin-bottom:18px">
-        <div class="card">
-            <h2 class="section-title">Exercise activities</h2>
-            <div class="chartbox"><canvas id="activityChart"></canvas></div>
-        </div>
-        <div class="card">
-            <h2 class="section-title">Water intake</h2>
-            <div class="chartbox"><canvas id="waterChart"></canvas></div>
-        </div>
-    </div>
-    {% endif %}
-
-    <div class="layout">
-
-        <section class="card">
-            <h2 class="section-title">Add a new entry</h2>
-
-            <form method="post" action="{{ url_for('add', category=category) }}">
-
-                <div class="field">
-                    <label for="title">Title *</label>
-                    <input id="title" name="title" required maxlength="200" placeholder="Enter a title">
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <div class="label">Average Water Intake</div>
+                    <div class="value">{{ health_summary.average_water }} glasses</div>
                 </div>
 
-                <div class="two">
-                    <div class="field">
-                        <label for="entry_date">Date</label>
-                        <input id="entry_date" type="date" name="entry_date" value="{{ today }}" required>
-                    </div>
+                <div class="summary-card">
+                    <div class="label">Total Exercise</div>
+                    <div class="value">{{ health_summary.exercise_total }} min</div>
+                </div>
 
-                    {% if category == 'expense' %}
-                    <div class="field">
-                        <label for="amount">Amount (₹)</label>
-                        <input id="amount" type="number" name="amount" min="0" step="0.01" placeholder="0.00">
+                <div class="summary-card">
+                    <div class="label">Average Sleep</div>
+                    <div class="value">{{ health_summary.average_sleep }} hrs</div>
+                </div>
+
+                <div class="summary-card">
+                    <div class="label">Meditation</div>
+                    <div class="value">{{ health_summary.meditation_total }} min</div>
+                </div>
+
+                <div class="summary-card">
+                    <div class="label">Period Records</div>
+                    <div class="value">{{ health_summary.period_records }}</div>
+                </div>
+
+                <div class="summary-card">
+                    <div class="label">Activity Records</div>
+                    <div class="value">{{ health_summary.activity_records }}</div>
+                </div>
+            </div>
+
+            <h3>Exercise Summary</h3>
+
+            {% if health_summary.activities %}
+                {% for activity in health_summary.activities %}
+                    <div class="chart-row">
+                        <div class="chart-label">
+                            <span>{{ activity.label or 'Activity' }}</span>
+                            <strong>{{ activity.minutes }} min</strong>
+                        </div>
+                        <div class="bar-bg">
+                            <div class="bar"
+                                 style="width: {{ [activity.minutes * 100 / ([health_summary.exercise_total, 1] | max), 100] | min }}%">
+                            </div>
+                        </div>
                     </div>
-                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <p class="muted">Add exercise details to view your exercise summary.</p>
+            {% endif %}
+
+            <h3 style="margin-top:22px">Water Intake History</h3>
+
+            {% if health_summary.water_days %}
+                {% for water in health_summary.water_days %}
+                    <div class="chart-row">
+                        <div class="chart-label">
+                            <span>{{ water.label }}</span>
+                            <strong>{{ water.water }} glasses</strong>
+                        </div>
+                        <div class="bar-bg">
+                            <div class="bar"
+                                 style="width: {{ [water.water * 10, 100] | min }}%">
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="muted">Add water intake to see your history.</p>
+            {% endif %}
+        </section>
+    {% endif %}
+
+    {% if category == 'expense' %}
+        <section class="panel">
+            <h3>💰 Monthly Expense Summary</h3>
+
+            <form method="GET" action="{{ url_for('module', category=category) }}"
+                  class="search-form">
+                <input type="month" name="month"
+                       value="{{ selected_month }}">
+                <button class="primary" type="submit">View Month</button>
+            </form>
+
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <div class="label">Total Expenses</div>
+                    <div class="value">₹{{ "%.2f"|format(expense_summary.total) }}</div>
+                </div>
+
+                <div class="summary-card">
+                    <div class="label">Monthly Budget</div>
+                    <div class="value">₹{{ "%.2f"|format(expense_summary.budget) }}</div>
+                </div>
+
+                <div class="summary-card">
+                    <div class="label">Budget Remaining</div>
+                    <div class="value">₹{{ "%.2f"|format(expense_summary.remaining) }}</div>
+                </div>
+            </div>
+
+            <h3>Expenses by Category</h3>
+
+            {% if expense_summary.categories %}
+                {% for item in expense_summary.categories %}
+                    <div class="chart-row">
+                        <div class="chart-label">
+                            <span>{{ item.label }}</span>
+                            <strong>₹{{ "%.2f"|format(item.total or 0) }}</strong>
+                        </div>
+                        <div class="bar-bg">
+                            <div class="bar"
+                                 style="width: {{ [item.total * 100 / ([expense_summary.total, 1] | max), 100] | min }}%">
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="muted">No expenses found for this month.</p>
+            {% endif %}
+
+            <p class="muted" style="margin-top:14px">
+                Note: This summary displays the budget already saved in the database.
+                If your app has no budget-setting route, the budget will remain ₹0.
+            </p>
+        </section>
+    {% endif %}
+
+    <section class="panel">
+        <h3>➕ Add New Entry</h3>
+
+        <form method="POST" action="{{ url_for('add_entry', category=category) }}">
+            <div class="form-grid">
+
+                <div class="field full">
+                    <label for="title">Title *</label>
+                    <input type="text" id="title" name="title"
+                           placeholder="Enter entry title" required maxlength="200">
+                </div>
+
+                <div class="field">
+                    <label for="entry_date">Date *</label>
+                    <input type="date" id="entry_date" name="entry_date"
+                           value="{{ today }}" required>
                 </div>
 
                 {% if category == 'expense' %}
-                <div class="field">
-                    <label for="expense_category">Expense category</label>
-                    <select id="expense_category" name="expense_category">
-                        <option>Food</option>
-                        <option>Travel</option>
-                        <option>Shopping</option>
-                        <option>Education</option>
-                        <option>Bills</option>
-                        <option>Health</option>
-                        <option>Other</option>
-                    </select>
-                </div>
+                    <div class="field">
+                        <label for="amount">Amount (₹) *</label>
+                        <input type="number" id="amount" name="amount"
+                               min="0" step="0.01" placeholder="Enter amount">
+                    </div>
+
+                    <div class="field">
+                        <label for="expense_category">Expense Category</label>
+                        <select id="expense_category" name="expense_category">
+                            <option value="">Select category</option>
+                            <option>Food</option>
+                            <option>Travel</option>
+                            <option>Shopping</option>
+                            <option>Education</option>
+                            <option>Health</option>
+                            <option>Bills</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
                 {% endif %}
 
                 {% if category == 'study' %}
-                <div class="two">
                     <div class="field">
                         <label for="study_subject">Subject</label>
-                        <input id="study_subject" name="study_subject" placeholder="e.g. Cloud Computing">
+                        <input type="text" id="study_subject" name="study_subject"
+                               placeholder="Enter subject">
                     </div>
+
                     <div class="field">
-                        <label for="study_status">Status</label>
+                        <label for="study_status">Study Status</label>
                         <select id="study_status" name="study_status">
-                            <option>Planned</option>
+                            <option value="">Select status</option>
+                            <option>Not Started</option>
                             <option>In Progress</option>
                             <option>Completed</option>
                         </select>
                     </div>
-                </div>
                 {% endif %}
 
                 {% if category == 'health' %}
-                <div class="field">
-                    <label for="activity">Activity / exercise</label>
-                    <input id="activity" name="activity" placeholder="e.g. Walking, Yoga, Gym">
-                </div>
+                    <div class="field">
+                        <label for="activity">Activity / Exercise</label>
+                        <input type="text" id="activity" name="activity"
+                               placeholder="e.g. Walking, Yoga">
+                    </div>
 
-                <div class="two">
                     <div class="field">
                         <label for="exercise_minutes">Exercise (minutes)</label>
-                        <input id="exercise_minutes" type="number" min="0" name="exercise_minutes" placeholder="30">
+                        <input type="number" id="exercise_minutes"
+                               name="exercise_minutes" min="0"
+                               placeholder="e.g. 30">
                     </div>
-                    <div class="field">
-                        <label for="meditation_minutes">Meditation (minutes)</label>
-                        <input id="meditation_minutes" type="number" min="0" name="meditation_minutes" placeholder="10">
-                    </div>
-                </div>
 
-                <div class="two">
                     <div class="field">
-                        <label for="water_glasses">Water (glasses)</label>
-                        <input id="water_glasses" type="number" min="0" step="0.5" name="water_glasses" placeholder="8">
+                        <label for="water_glasses">Water Intake (glasses)</label>
+                        <input type="number" id="water_glasses"
+                               name="water_glasses" min="0"
+                               placeholder="e.g. 8">
                     </div>
-                    <div class="field">
-                        <label for="water_goal">Water goal (glasses)</label>
-                        <input id="water_goal" type="number" min="0" step="0.5" name="water_goal" placeholder="8">
-                    </div>
-                </div>
 
-                <div class="two">
+                    <div class="field">
+                        <label for="water_goal">Water Goal (glasses)</label>
+                        <input type="number" id="water_goal"
+                               name="water_goal" min="0"
+                               placeholder="e.g. 8">
+                    </div>
+
                     <div class="field">
                         <label for="sleep_hours">Sleep (hours)</label>
-                        <input id="sleep_hours" type="number" min="0" max="24" step="0.5" name="sleep_hours" placeholder="7.5">
+                        <input type="number" id="sleep_hours"
+                               name="sleep_hours" min="0" max="24" step="0.5"
+                               placeholder="e.g. 7.5">
                     </div>
+
                     <div class="field">
-                        <label for="health_status">Health status</label>
+                        <label for="meditation_minutes">Meditation (minutes)</label>
+                        <input type="number" id="meditation_minutes"
+                               name="meditation_minutes" min="0"
+                               placeholder="e.g. 10">
+                    </div>
+
+                    <div class="field">
+                        <label for="meals">Meals</label>
+                        <input type="text" id="meals" name="meals"
+                               placeholder="Breakfast, lunch, dinner">
+                    </div>
+
+                    <div class="field">
+                        <label for="health_status">Health Status</label>
                         <select id="health_status" name="health_status">
-                            <option value="">Select</option>
+                            <option value="">Select status</option>
                             <option>Good</option>
                             <option>Average</option>
-                            <option>Not feeling well</option>
+                            <option>Not Feeling Well</option>
                         </select>
                     </div>
-                </div>
 
-                <div class="field">
-                    <label for="meals">Meals / food notes</label>
-                    <textarea id="meals" name="meals" placeholder="Breakfast, lunch, dinner or food notes"></textarea>
-                </div>
-
-                <div class="two">
                     <div class="field">
-                        <label for="period_start">Period start (optional)</label>
-                        <input id="period_start" type="date" name="period_start">
+                        <label for="period_start">Period Start Date (optional)</label>
+                        <input type="date" id="period_start" name="period_start">
                     </div>
-                    <div class="field">
-                        <label for="period_end">Period end (optional)</label>
-                        <input id="period_end" type="date" name="period_end">
-                    </div>
-                </div>
 
-                <div class="two">
                     <div class="field">
-                        <label for="flow">Flow (optional)</label>
+                        <label for="period_end">Period End Date (optional)</label>
+                        <input type="date" id="period_end" name="period_end">
+                    </div>
+
+                    <div class="field">
+                        <label for="flow">Flow</label>
                         <select id="flow" name="flow">
-                            <option value="">Not recorded</option>
+                            <option value="">Select flow</option>
                             <option>Light</option>
                             <option>Medium</option>
                             <option>Heavy</option>
                         </select>
                     </div>
+
                     <div class="field">
-                        <label for="symptoms">Symptoms (optional)</label>
-                        <input id="symptoms" name="symptoms" placeholder="e.g. cramps, headache">
+                        <label for="symptoms">Symptoms</label>
+                        <input type="text" id="symptoms" name="symptoms"
+                               placeholder="e.g. Cramps, headache">
                     </div>
-                </div>
                 {% endif %}
 
-                <div class="field">
-                    <label for="content">Notes / description</label>
-                    <textarea id="content" name="content" placeholder="Write your diary entry here..."></textarea>
+                {% if category == 'travel' %}
+                    <div class="field">
+                        <label for="travel_destination">Destination</label>
+                        <input type="text" id="travel_destination"
+                               placeholder="Enter destination">
+                    </div>
+
+                    <div class="field">
+                        <label for="travel_type">Travel Type</label>
+                        <select id="travel_type">
+                            <option>Personal</option>
+                            <option>Family</option>
+                            <option>Educational</option>
+                            <option>Adventure</option>
+                        </select>
+                    </div>
+                {% endif %}
+
+                <div class="field full">
+                    <label for="content">Description / Notes</label>
+                    <textarea id="content" name="content"
+                              placeholder="Write your details here..."></textarea>
                 </div>
 
-                <button class="btn" type="submit">Save Entry</button>
-            </form>
-        </section>
+            </div>
 
-        <section class="card">
-            <h2 class="section-title">
-                Saved entries <span class="pill">{{ entries|length }}</span>
-            </h2>
+            <div class="actions">
+                <button type="submit" class="primary">Save Entry</button>
+                <a href="{{ url_for('dashboard') }}" class="button secondary">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </section>
 
-            <form method="get" class="search">
-                <input name="search" value="{{ search }}" placeholder="Search title or notes">
-                <button class="btn" type="submit">Search</button>
-                {% if search %}
-                    <a class="btn light" href="{{ url_for('module', category=category) }}">Clear</a>
-                {% endif %}
-            </form>
+    <section class="panel">
+        <h3>📚 Saved Entries</h3>
 
-            {% if entries %}
-                {% for entry in entries %}
+        <form method="GET" action="{{ url_for('module', category=category) }}"
+              class="search-form">
+            <input type="search" name="search" value="{{ search }}"
+                   placeholder="Search titles or descriptions...">
+            {% if category == 'expense' %}
+                <input type="hidden" name="month" value="{{ selected_month }}">
+            {% endif %}
+            <button type="submit" class="primary">Search</button>
+            <a href="{{ url_for('module', category=category) }}"
+               class="button secondary">Clear</a>
+        </form>
+
+        {% if entries %}
+            {% for entry in entries %}
                 <article class="entry">
-                    <h3>{{ entry.title|default('Untitled entry', true) }}</h3>
+                    <h4>{{ entry.title }}</h4>
 
-                    <div class="meta">
-                        {{ entry.entry_date|default('', true) }}
-
-                        {% if category == 'expense' and entry.amount is defined and entry.amount is not none %}
-                            · ₹{{ '%.2f'|format(entry.amount|float) }}
-                        {% endif %}
-
-                        {% if entry.expense_category is defined and entry.expense_category %}
-                            · {{ entry.expense_category }}
-                        {% endif %}
-
-                        {% if entry.study_subject is defined and entry.study_subject %}
-                            · {{ entry.study_subject }}
-                        {% endif %}
+                    <div class="entry-date">
+                        Date: {{ entry.entry_date }}
                     </div>
 
-                    {% if entry.content is defined and entry.content %}
-                        <p>{{ entry.content }}</p>
+                    {% if entry.content %}
+                        <div class="entry-content">{{ entry.content }}</div>
                     {% endif %}
 
-                    {% if category == 'health' %}
-                    <div>
-                        {% if entry.activity is defined and entry.activity %}
-                            <span class="pill">{{ entry.activity }}</span>
+                    <div class="entry-details">
+                        {% if category == 'expense' %}
+                            {% if entry.amount is not none %}
+                                <span class="tag">₹{{ "%.2f"|format(entry.amount) }}</span>
+                            {% endif %}
+                            {% if entry.expense_category %}
+                                <span class="tag">{{ entry.expense_category }}</span>
+                            {% endif %}
                         {% endif %}
 
-                        {% if entry.exercise_minutes is defined and entry.exercise_minutes is not none %}
-                            <span class="pill">Exercise: {{ entry.exercise_minutes }} min</span>
+                        {% if category == 'study' %}
+                            {% if entry.study_subject %}
+                                <span class="tag">{{ entry.study_subject }}</span>
+                            {% endif %}
+                            {% if entry.study_status %}
+                                <span class="tag">{{ entry.study_status }}</span>
+                            {% endif %}
                         {% endif %}
 
-                        {% if entry.water_glasses is defined and entry.water_glasses is not none %}
-                            <span class="pill">Water: {{ entry.water_glasses }} glasses</span>
+                        {% if category == 'health' %}
+                            {% if entry.activity %}
+                                <span class="tag">{{ entry.activity }}</span>
+                            {% endif %}
+                            {% if entry.exercise_minutes is not none %}
+                                <span class="tag">Exercise: {{ entry.exercise_minutes }} min</span>
+                            {% endif %}
+                            {% if entry.water_glasses is not none %}
+                                <span class="tag">Water: {{ entry.water_glasses }} glasses</span>
+                            {% endif %}
+                            {% if entry.sleep_hours is not none %}
+                                <span class="tag">Sleep: {{ entry.sleep_hours }} hrs</span>
+                            {% endif %}
+                            {% if entry.meditation_minutes is not none %}
+                                <span class="tag">Meditation: {{ entry.meditation_minutes }} min</span>
+                            {% endif %}
+                            {% if entry.health_status %}
+                                <span class="tag">{{ entry.health_status }}</span>
+                            {% endif %}
+                            {% if entry.symptoms %}
+                                <span class="tag">Symptoms: {{ entry.symptoms }}</span>
+                            {% endif %}
                         {% endif %}
 
-                        {% if entry.sleep_hours is defined and entry.sleep_hours is not none %}
-                            <span class="pill">Sleep: {{ entry.sleep_hours }} hrs</span>
+                        {% if entry.meals %}
+                            <span class="tag">Meals: {{ entry.meals }}</span>
                         {% endif %}
 
-                        {% if entry.meditation_minutes is defined and entry.meditation_minutes is not none %}
-                            <span class="pill">Meditation: {{ entry.meditation_minutes }} min</span>
+                        {% if entry.period_start %}
+                            <span class="tag">Period start: {{ entry.period_start }}</span>
                         {% endif %}
 
-                        {% if entry.health_status is defined and entry.health_status %}
-                            <span class="pill">{{ entry.health_status }}</span>
+                        {% if entry.period_end %}
+                            <span class="tag">Period end: {{ entry.period_end }}</span>
                         {% endif %}
 
-                        {% if entry.period_start is defined and entry.period_start %}
-                            <span class="pill">
-                                Period: {{ entry.period_start }}
-                                {% if entry.period_end is defined and entry.period_end %}
-                                    – {{ entry.period_end }}
-                                {% endif %}
-                            </span>
-                        {% endif %}
-
-                        {% if entry.symptoms is defined and entry.symptoms %}
-                            <span class="pill">Symptoms: {{ entry.symptoms }}</span>
-                        {% endif %}
-
-                        {% if entry.meals is defined and entry.meals %}
-                            <p><strong>Meals:</strong> {{ entry.meals }}</p>
+                        {% if entry.flow %}
+                            <span class="tag">Flow: {{ entry.flow }}</span>
                         {% endif %}
                     </div>
-                    {% endif %}
-
-                    {% if category == 'study' and entry.study_status is defined and entry.study_status %}
-                        <span class="pill">{{ entry.study_status }}</span>
-                    {% endif %}
 
                     <div class="entry-actions">
-                        <a class="btn light" href="{{ url_for('edit', entry_id=entry.id) }}">Edit</a>
+                        <a class="button secondary"
+                           href="{{ url_for('edit_entry', entry_id=entry.id) }}">
+                            Edit
+                        </a>
 
-                        <form method="post"
-                              action="{{ url_for('delete', entry_id=entry.id) }}"
-                              onsubmit="return confirm('Delete this entry?');">
-                            <button class="btn danger" type="submit">Delete</button>
+                        <form method="POST"
+                              action="{{ url_for('delete_entry', entry_id=entry.id) }}"
+                              onsubmit="return confirm('Are you sure you want to delete this entry?');">
+                            <button type="submit" class="danger">Delete</button>
                         </form>
                     </div>
                 </article>
-                {% endfor %}
-            {% else %}
-                <p class="meta">No entries found. Add your first entry using the form.</p>
-            {% endif %}
-        </section>
-    </div>
-</div>
+            {% endfor %}
+        {% else %}
+            <div class="empty">
+                <p>No entries found.</p>
+                <p class="muted">Add your first entry using the form above.</p>
+            </div>
+        {% endif %}
+    </section>
 
-<script>
-const expenseData = {{ (expense_summary.categories|default([], true))|tojson }};
-const activityData = {{ (health_summary.activities|default([], true))|tojson }};
-const waterData = {{ (health_summary.water_days|default([], true))|tojson }};
+</main>
 
-function drawChart(id, type, labels, data, label) {
-    const el = document.getElementById(id);
-    if (!el || typeof Chart === 'undefined') return;
-
-    new Chart(el, {
-        type: type,
-        data: {
-            labels: labels,
-            datasets: [{
-                label: label,
-                data: data,
-                borderWidth: 2,
-                tension: 0.3
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: type === 'doughnut' }
-            }
-        }
-    });
-}
-
-drawChart(
-    'expenseChart',
-    'doughnut',
-    expenseData.map(x => x.label),
-    expenseData.map(x => Number(x.total || 0)),
-    'Expenses'
-);
-
-drawChart(
-    'activityChart',
-    'bar',
-    activityData.map(x => x.label),
-    activityData.map(x => Number(x.minutes || 0)),
-    'Exercise minutes'
-);
-
-drawChart(
-    'waterChart',
-    'line',
-    waterData.map(x => x.label),
-    waterData.map(x => Number(x.water || 0)),
-    'Water glasses'
-);
-</script>
+<footer>
+    Digital Diary Application · Your memories, organized in one place
+</footer>
 
 </body>
 </html>
