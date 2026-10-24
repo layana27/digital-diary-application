@@ -69,7 +69,7 @@
             <div class="grid">
                 <div class="field">
                     <label for="title">Title *</label>
-                    <input id="title" name="title" required
+                    <input id="title" name="title" required maxlength="150"
                            value="{{ entry.get('title') or '' }}">
                 </div>
 
@@ -79,52 +79,60 @@
                            value="{{ entry['entry_date'].strftime('%Y-%m-%d') if entry.get('entry_date') else '' }}">
                 </div>
 
-                {% if entry.get('mood') is not none or entry.get('gratitude') is not none %}
+                {% if entry.get('mood') is not none %}
                 <div class="field">
                     <label for="mood">Mood</label>
                     <select id="mood" name="mood">
+                        <option value="">Select mood</option>
                         {% for option in ['Happy','Calm','Excited','Grateful','Sad','Stressed','Angry','Tired'] %}
                         <option value="{{ option }}" {% if entry.get('mood') == option %}selected{% endif %}>{{ option }}</option>
                         {% endfor %}
                     </select>
-                
+                </div>
                 {% endif %}
 
-                {% if entry.get('water_intake') is not none or entry.get('sleep_hours') is not none or entry.get('exercise_minutes') is not none or entry.get('period_start') is not none or entry.get('period_end') is not none %}
+                {% if entry.get('water_intake') is not none or entry.get('sleep_hours') is not none or entry.get('exercise_minutes') is not none or entry.get('meditation_minutes') is not none or entry.get('period_start') is not none or entry.get('period_end') is not none or entry.get('meals') is not none %}
                 <div class="field">
                     <label for="water_intake">Water Intake (litres)</label>
                     <input id="water_intake" type="number" min="0" max="20" step="0.1"
                            name="water_intake" value="{{ entry.get('water_intake') if entry.get('water_intake') is not none else '' }}">
                 </div>
+
                 <div class="field">
                     <label for="sleep_hours">Sleep (hours)</label>
                     <input id="sleep_hours" type="number" min="0" max="24" step="0.5"
                            name="sleep_hours" value="{{ entry.get('sleep_hours') if entry.get('sleep_hours') is not none else '' }}">
                 </div>
+
                 <div class="field">
                     <label for="exercise_minutes">Exercise (minutes)</label>
                     <input id="exercise_minutes" type="number" min="0" step="1"
                            name="exercise_minutes" value="{{ entry.get('exercise_minutes') if entry.get('exercise_minutes') is not none else '' }}">
                 </div>
+
                 <div class="field">
                     <label for="meditation_minutes">Yoga / Meditation (minutes)</label>
                     <input id="meditation_minutes" type="number" min="0" step="1"
                            name="meditation_minutes" value="{{ entry.get('meditation_minutes') if entry.get('meditation_minutes') is not none else '' }}">
                 </div>
+
                 <div class="field full">
                     <label for="meals">Meals and Healthy Habits</label>
                     <textarea id="meals" name="meals">{{ entry.get('meals') or '' }}</textarea>
                 </div>
+
                 <div class="field">
                     <label for="period_start">Period Start Date</label>
                     <input id="period_start" type="date" name="period_start"
                            value="{{ entry['period_start'].strftime('%Y-%m-%d') if entry.get('period_start') else '' }}">
                 </div>
+
                 <div class="field">
                     <label for="period_end">Period End Date</label>
                     <input id="period_end" type="date" name="period_end"
                            value="{{ entry['period_end'].strftime('%Y-%m-%d') if entry.get('period_end') else '' }}">
                 </div>
+
                 <div class="field">
                     <label for="flow_level">Flow Level</label>
                     <select id="flow_level" name="flow_level">
@@ -134,22 +142,25 @@
                         {% endfor %}
                     </select>
                 </div>
+
                 <div class="field">
                     <label for="symptoms">Symptoms</label>
                     <input id="symptoms" name="symptoms" value="{{ entry.get('symptoms') or '' }}">
                 </div>
                 {% endif %}
 
-                {% if entry.get('subject') is not none or entry.get('deadline') is not none or entry.get('planned_hours') is not none %}
+                {% if entry.get('subject') is not none or entry.get('deadline') is not none or entry.get('planned_hours') is not none or entry.get('actual_hours') is not none %}
                 <div class="field">
                     <label for="subject">Subject</label>
                     <input id="subject" name="subject" value="{{ entry.get('subject') or '' }}">
                 </div>
+
                 <div class="field">
                     <label for="deadline">Deadline</label>
                     <input id="deadline" type="date" name="deadline"
                            value="{{ entry['deadline'].strftime('%Y-%m-%d') if entry.get('deadline') else '' }}">
                 </div>
+
                 <div class="field">
                     <label for="priority">Priority</label>
                     <select id="priority" name="priority">
@@ -158,6 +169,7 @@
                         {% endfor %}
                     </select>
                 </div>
+
                 <div class="field">
                     <label for="status">Task Status</label>
                     <select id="status" name="status">
@@ -166,11 +178,13 @@
                         {% endfor %}
                     </select>
                 </div>
+
                 <div class="field">
                     <label for="planned_hours">Planned Hours</label>
                     <input id="planned_hours" type="number" min="0" step="0.25"
                            name="planned_hours" value="{{ entry.get('planned_hours') if entry.get('planned_hours') is not none else '' }}">
                 </div>
+
                 <div class="field">
                     <label for="actual_hours">Actual Hours</label>
                     <input id="actual_hours" type="number" min="0" step="0.25"
@@ -178,20 +192,23 @@
                 </div>
                 {% endif %}
 
-                {% if entry.get('expense_category') is not none or entry.get('expenses') is not none %}
+                {% if entry.get('expense_category') is not none or entry.get('expenses') is not none or entry.get('monthly_budget') is not none %}
                 <div class="field">
                     <label for="expense_category">Expense Category</label>
                     <select id="expense_category" name="expense_category">
+                        <option value="">Select category</option>
                         {% for option in ['House Rent','Food & Groceries','Transportation','Electricity/Phone/Internet','Health & Personal Care','Shopping & Entertainment','Other Expenses','Savings'] %}
                         <option value="{{ option }}" {% if entry.get('expense_category') == option %}selected{% endif %}>{{ option }}</option>
                         {% endfor %}
                     </select>
                 </div>
+
                 <div class="field">
                     <label for="expenses">Amount (₹)</label>
                     <input id="expenses" type="number" min="0" step="0.01"
                            name="expenses" value="{{ entry.get('expenses') if entry.get('expenses') is not none else '' }}">
                 </div>
+
                 <div class="field">
                     <label for="monthly_budget">Monthly Budget (₹)</label>
                     <input id="monthly_budget" type="number" min="0" step="0.01"

@@ -140,8 +140,6 @@
                         </select>
                     </div>
 
-                    
-
                 {% elif category in ['health', 'health_diary'] %}
                     <div class="field">
                         <label for="water_intake">Water Intake (litres)</label>
@@ -362,10 +360,6 @@
 
                 {% if entry.get('meals') %}
                     <p><strong>Meals and Habits:</strong> {{ entry['meals'] }}</p>
-                {% endif %}
-
-                {% if entry.get('gratitude') %}
-                    <p><strong>Gratitude:</strong> {{ entry['gratitude'] }}</p>
                 {% endif %}
 
                 {% if entry.get('period_start') %}
